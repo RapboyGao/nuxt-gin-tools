@@ -7,6 +7,9 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.1",
+  "scripts": {
+    "build": "tsc ."
+  },
   "dependencies": {
     "7zip-min": "^2.1.0",
     "concurrently": "^9.2.0",
@@ -14,6 +17,7 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.0.14"
+    "@types/node": "^24.0.14",
+    "typescript": "^5.8.3"
   }
 }
