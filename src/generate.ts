@@ -20,7 +20,7 @@ const cwd = process.cwd(); // 获取当前工作目录
  */
 let commands: ConcurrentlyCommandInput[] = [
   {
-    command: "openapi-generator-cli generate -i openapi.yaml -g go-gin-server -c gen/config/go-gin-server.json -o .",
+    command: "openapi-generator-cli generate -i openapi.yaml -g go-gin-server -c node_modules/nuxt3-gin-tools/src/go-gin-server.json -o .",
     name: "go",
     prefixColor: "green",
   },
@@ -93,12 +93,10 @@ async function removePaths() {
 export async function apiGenerate() {
   try {
     // 输出开始信息
-    console.log("开始生成API代码...");
+    console.log(chalk.bgGreen("开始生成API代码..."));
 
     // 并发执行命令列表中的所有命令，等待所有命令完成
     await concurrently(commands).result;
-
-    console.log("API代码生成完成");
 
     // 按顺序执行清理和配置任务
     await removePaths();

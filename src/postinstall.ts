@@ -2,7 +2,7 @@ import concurrently from "concurrently";
 
 export function postInstall() {
   // 执行并发命令
-  concurrently([
+  return concurrently([
     {
       command: "go mod download && go mod tidy",
       name: "go",
@@ -13,7 +13,7 @@ export function postInstall() {
       name: "nuxt",
       prefixColor: "blue",
     },
-  ]);
+  ]).result;
 }
 
 export default postInstall;

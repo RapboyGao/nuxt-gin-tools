@@ -7,7 +7,7 @@ const cwd = process.cwd();
 export function build() {
   ensureDirSync(join(cwd, "vue/.output"));
   ensureFileSync(join(cwd, "tmp/production.exe"));
-  concurrently([
+  return concurrently([
     {
       command: "go build -o ./tmp/production.exe .",
       name: "go",
@@ -18,7 +18,7 @@ export function build() {
       name: "nuxt",
       prefixColor: "blue",
     },
-  ]);
+  ]).result;
 }
 
 export default build;

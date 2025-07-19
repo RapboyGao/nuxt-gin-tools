@@ -12,6 +12,9 @@ export async function build() {
   ]).result;
 
   copySync("package.json", "dist/package.json");
+  copySync("README.md", "dist/README.md");
+  copySync("LICENSE", "dist/LICENSE");
+  copySync("src/go-gin-server.json", "dist/src/go-gin-server.json");
   removeSync("dist/build.js");
   removeSync("dist/build.d.ts");
 }
