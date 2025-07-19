@@ -1,9 +1,9 @@
 {
-  "name": "nuxt3-gin-tools",
-  "version": "0.0.4",
+  "name": "nuxt-gin-tools",
+  "version": "0.0.1",
   "description": "",
   "bin": {
-    "nuxt3-gin": "index.js"
+    "nuxt-gin": "index.js"
   },
   "keywords": [],
   "author": "",

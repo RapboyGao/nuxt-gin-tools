@@ -20,15 +20,15 @@ if (args.length === 0) {
 
 // 根据第一个参数执行对应的命令
 switch (args[0]) {
+  case "dev":
+    // 启动开发模式
+    develop();
+    break;
   case "build":
     // 执行构建和打包操作
     buildAndPack();
     break;
-  case "develop":
-    // 启动开发模式
-    develop();
-    break;
-  case "generate":
+  case "gen":
     // 生成API代码（注：此处命令可能拼写错误，应为generate）
     apiGenerate();
     break;
