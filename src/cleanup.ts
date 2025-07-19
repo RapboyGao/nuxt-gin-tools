@@ -11,15 +11,16 @@ export function ifExistsRemove(relativePath: string) {
     FS.removeSync(absolutePath);
   }
 }
-/**
- * 清理构建目录和临时文件
- */
-export function cleanUp() {
-  concurrently([
+
+export function cleanUpNuxt() {
+  return concurrently([
     {
       command: "npx nuxt cleanup",
     },
-  ]);
+  ]).result;
+}
+
+export function cleanUpBuild() {
   // 清理构建目录
   ifExistsRemove(".build");
   // 清理原始 dist 目录
@@ -30,8 +31,18 @@ export function cleanUp() {
   ifExistsRemove("vue/.output");
   // 清理 OpenAPI 生成的文件
   ifExistsRemove(".openapi-generator");
+  // 清理go.sum
+  ifExistsRemove("go.sum");
+}
 
-  console.log(chalk.bgGreen("清理完成！"));
+/**
+ * 清理构建目录和临时文件
+ */
+export async function cleanUp() {
+  const result = cleanUpNuxt();
+  cleanUpBuild();
+  await result;
+  console.log(chalk.bgGreen("----- 清理完成！-----"));
 }
 
 export default cleanUp;
