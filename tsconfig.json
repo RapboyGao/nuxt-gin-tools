@@ -10,5 +10,5 @@
     "removeComments": false // 保留注释
   },
   "include": ["**/*.ts"], // 包含的文件
-  "exclude": ["node_modules", "dist"] // 排除的文件
+  "exclude": ["node_modules", "dist", "build.ts"] // 排除的文件
 }
