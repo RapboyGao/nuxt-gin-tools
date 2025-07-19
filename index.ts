@@ -28,7 +28,7 @@ switch (args[0]) {
     // 启动开发模式
     develop();
     break;
-  case "genrate":
+  case "generate":
     // 生成API代码（注：此处命令可能拼写错误，应为generate）
     apiGenerate();
     break;
