@@ -1,6 +1,6 @@
 {
   "name": "nuxt-gin-tools",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "bin": {
     "nuxt-gin": "index.js"
@@ -21,6 +21,7 @@
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.0.14",
+    "nuxt": "^4.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
