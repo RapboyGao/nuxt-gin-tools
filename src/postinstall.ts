@@ -9,7 +9,7 @@ export function postInstall() {
       prefixColor: "green",
     },
     {
-      command: "nuxt prepare",
+      command: "npx nuxt prepare",
       name: "nuxt",
       prefixColor: "blue",
     },

@@ -14,7 +14,7 @@ export function build() {
       prefixColor: "green",
     },
     {
-      command: "nuxt generate",
+      command: "npx nuxt generate",
       name: "nuxt",
       prefixColor: "blue",
     },
