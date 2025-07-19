@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist", // 指定输出目录
+    "rootDir": "./", // 指定源代码目录（可选）
+    "module": "commonjs", // 模块系统
+    "target": "ES6", // 目标版本
+    "strict": true, // 严格模式
+    "esModuleInterop": true // 支持ES模块interop
+  },
+  "include": ["**/*.ts"], // 包含的文件
+  "exclude": ["node_modules"] // 排除的文件
+}
