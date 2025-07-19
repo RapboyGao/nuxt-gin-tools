@@ -6,8 +6,9 @@
     "module": "commonjs", // 模块系统
     "target": "ES6", // 目标版本
     "strict": true, // 严格模式
-    "esModuleInterop": true // 支持ES模块interop
+    "esModuleInterop": true, // 支持ES模块interop
+    "removeComments": false // 保留注释
   },
   "include": ["**/*.ts"], // 包含的文件
-  "exclude": ["node_modules"] // 排除的文件
+  "exclude": ["node_modules", "dist"] // 排除的文件
 }
