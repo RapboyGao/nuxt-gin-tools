@@ -10,6 +10,8 @@ import apiGenerate from "./src/api-generate";
 import postInstall from "./src/postinstall";
 // 导入清理功能
 import cleanUp from "./src/cleanup";
+// 导入更新功能
+import update from "./src/update";
 
 // 获取命令行参数（去除前两个默认参数）
 const args = process.argv.slice(2);
@@ -41,6 +43,10 @@ switch (args[0]) {
   case "cleanup":
     // 执行清理操作
     cleanUp();
+    break;
+  case "update":
+    // 更新依赖
+    update();
     break;
   default:
     console.error(`未知命令: ${args[0]}`);
