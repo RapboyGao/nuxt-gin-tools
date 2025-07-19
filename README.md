@@ -1,6 +1,6 @@
 # nuxt-gin-tools
 
-This project is used as a dependency for [nuxt-gin-starter](https://github.com/RapboyGao/nuxt3-gin-starter.git)
+This project is used as a dependency for [nuxt-gin-starter](https://github.com/RapboyGao/nuxt-gin-starter.git)
 
 ## Command: nuxt-gin dev
 
