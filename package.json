@@ -8,10 +8,11 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.1",
   "scripts": {
-    "build":  "tsc"
+    "build": "tsc"
   },
   "dependencies": {
     "7zip-min": "^2.1.0",
+    "chalk": "^5.4.1",
     "concurrently": "^9.2.0",
     "fs-extra": "^11.3.0"
   },
