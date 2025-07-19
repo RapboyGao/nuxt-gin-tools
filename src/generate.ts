@@ -4,11 +4,11 @@
  * 如需调整生成逻辑，请修改相关配置文件或脚本。
  */
 
-import concurrently from "concurrently"; // 用于并发执行命令的工具
-import type { ConcurrentlyCommandInput } from "concurrently"; // 引入类型定义以支持TypeScript
-import Path from "path"; // 处理和转换文件路径的工具
-import Fs from "fs-extra"; // 文件系统操作工具，提供更便捷的API
 import chalk from "chalk";
+import type { ConcurrentlyCommandInput } from "concurrently"; // 引入类型定义以支持TypeScript
+import concurrently from "concurrently"; // 用于并发执行命令的工具
+import Fs from "fs-extra"; // 文件系统操作工具，提供更便捷的API
+import Path from "path"; // 处理和转换文件路径的工具
 
 const cwd = process.cwd(); // 获取当前工作目录
 
