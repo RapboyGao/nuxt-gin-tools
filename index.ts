@@ -5,7 +5,7 @@ import buildAndPack from "./src/pack";
 // 导入开发模式功能
 import develop from "./src/develop";
 // 导入API生成功能
-import apiGenerate from "./src/generate";
+import apiGenerate from "./src/api-generate";
 // 导入安装后处理功能
 import postInstall from "./src/postinstall";
 
