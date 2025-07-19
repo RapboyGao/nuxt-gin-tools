@@ -1,7 +1,7 @@
 import Zip from "7zip-min";
-import chalk from "chalk";
+import Chalk from "chalk";
 import Fs from "fs-extra";
-import path from "path";
+import Path from "path";
 import build from "./builder";
 
 const cwd = process.cwd();
@@ -11,7 +11,7 @@ const cwd = process.cwd();
  * @returns 相对于Workspace位置的路径名称
  */
 function p(...names: string[]) {
-  return path.join(cwd, ...names);
+  return Path.join(cwd, ...names);
 }
 
 /** 打包文件夹相对于Workspace位置 */
@@ -24,6 +24,8 @@ const FILE_LIST = ["vue/.output", "tmp/production.exe", "ecosystem.config.js", "
 const PACKAGE_JSON = BUILD_DEST + "/package.json";
 /** 打包package.7z位置 */
 const _7Z_PATH = BUILD_DEST + "/../package.7z";
+/** 打包package.7z相对位置 */
+const _7Z_PATH_RELATIVE = Path.relative(cwd, _7Z_PATH);
 
 /** package.json 内容 */
 const PACKAGE_JSON_CONTENT = {
@@ -69,7 +71,7 @@ async function pack() {
 export async function buildAndPack() {
   await build();
   await pack();
-  console.log(chalk.bgGreen("打包完成!", _7Z_PATH));
+  console.log(Chalk.bgGreen("打包完成!", _7Z_PATH_RELATIVE));
 }
 
 export default buildAndPack;
