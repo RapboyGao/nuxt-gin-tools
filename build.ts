@@ -14,8 +14,6 @@ export async function build() {
       prefixColor: "green",
     },
   ]).result;
-  removeSync("dist/build.js");
-  removeSync("dist/build.d.ts");
 }
 
 build();

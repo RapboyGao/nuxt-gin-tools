@@ -1,4 +1,4 @@
-import type { NuxtConfig } from "nuxt/config";
+import { NuxtConfig } from "nuxt/config";
 import { readJSONSync } from "fs-extra";
 import { resolve } from "path";
 
@@ -25,6 +25,11 @@ export const config: NuxtConfig = {
   app: { baseURL: serverConfig.baseUrl },
   devServer: { port: serverConfig.nuxtPort },
   experimental: { payloadExtraction: false },
+  devtools: {
+    timeline: {
+      enabled: true,
+    },
+  },
 };
 
 export default config;
