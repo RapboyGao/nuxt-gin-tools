@@ -8,6 +8,8 @@ import develop from "./src/develop";
 import apiGenerate from "./src/api-generate";
 // 导入安装后处理功能
 import postInstall from "./src/postinstall";
+// 导入清理功能
+import cleanUp from "./src/cleanup";
 
 // 获取命令行参数（去除前两个默认参数）
 const args = process.argv.slice(2);
@@ -35,6 +37,10 @@ switch (args[0]) {
   case "install":
     // 执行安装后的初始化操作
     postInstall();
+    break;
+  case "cleanup":
+    // 执行清理操作
+    cleanUp();
     break;
   default:
     console.error(`未知命令: ${args[0]}`);

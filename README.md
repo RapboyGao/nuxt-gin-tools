@@ -17,3 +17,7 @@ This project is used as a dependency for [nuxt-gin-starter](https://github.com/R
 ## Command: nuxt-gin install
 
 - Postinstall script.
+
+## Command: nuxt-gin cleanup
+
+- Cleanup script.
