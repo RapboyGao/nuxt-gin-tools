@@ -5,8 +5,10 @@
  */
 
 import concurrently from "concurrently"; // 用于并发执行命令的工具
+import type { ConcurrentlyCommandInput } from "concurrently"; // 引入类型定义以支持TypeScript
 import Path from "path"; // 处理和转换文件路径的工具
 import Fs from "fs-extra"; // 文件系统操作工具，提供更便捷的API
+import chalk from "chalk";
 
 const cwd = process.cwd(); // 获取当前工作目录
 
@@ -16,9 +18,17 @@ const cwd = process.cwd(); // 获取当前工作目录
  * 1. 生成Go Gin服务器代码
  * 2. 生成TypeScript Axios客户端代码
  */
-let commands = [
-  "openapi-generator-cli generate -i openapi.yaml -g go-gin-server -c gen/config/go-gin-server.json -o .",
-  "openapi-generator-cli generate -i openapi.yaml -g typescript-axios -o vue/composables/api ",
+let commands: ConcurrentlyCommandInput[] = [
+  {
+    command: "openapi-generator-cli generate -i openapi.yaml -g go-gin-server -c gen/config/go-gin-server.json -o .",
+    name: "go",
+    prefixColor: "green",
+  },
+  {
+    command: "openapi-generator-cli generate -i openapi.yaml -g typescript-axios -o vue/composables/api ",
+    name: "vue",
+    prefixColor: "blue",
+  },
 ];
 
 /**
@@ -94,11 +104,10 @@ export async function apiGenerate() {
     await removePaths();
     await setVueBaseUrl();
 
-    console.log("所有任务执行完毕!");
+    console.log(chalk.bgGreen("API代码生成和配置完成!"));
   } catch (error) {
     // 捕获并处理任何阶段发生的错误
-    console.error("执行过程中发生错误:", error);
-
+    console.error(chalk.red("执行过程中发生错误:"), error);
     // 以错误码1退出进程，表示执行失败
     process.exit(1);
   }

@@ -1,6 +1,7 @@
 import Fs from "fs-extra";
 import Zip from "7zip-min";
 import path from "path";
+import chalk from "chalk";
 
 const cwd = process.cwd();
 
@@ -65,6 +66,7 @@ async function pack() {
 export async function buildAndPack() {
   await require("./builder")();
   await pack();
+  console.log(chalk.bgGreen("打包完成!", _7Z_PATH));
 }
 
 export default buildAndPack;

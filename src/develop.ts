@@ -5,15 +5,34 @@ import concurrently from "concurrently";
 
 const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));
+/**
+ *
+ * @returns {string} 返回air命令的路径
+ * 根据操作系统不同，返回不同的路径
+ * 如果是macOS，返回~/go/bin/air
+ * 如果是其他操作系统，返回air
+ */
+function getAirCommand() {
+  if (os.platform() === "darwin") {
+    return "~/go/bin/air";
+  } else {
+    return "air";
+  }
+}
 
 export function develop() {
-  // 如果是macOS
-  if (os.platform() === "darwin") {
-    // 如果是macOS，使用open命令打开浏览器
-    concurrently([`nuxt dev --port=${serverConfig.nuxtPort}`, "~/go/bin/air"]);
-  } else {
-    concurrently([`nuxt dev --port=${serverConfig.nuxtPort}`, "air"]);
-  }
+  concurrently([
+    {
+      command: getAirCommand(),
+      name: "go",
+      prefixColor: "green",
+    },
+    {
+      command: `nuxt dev --port=${serverConfig.nuxtPort}`,
+      name: "nuxt",
+      prefixColor: "blue",
+    },
+  ]);
 }
 
 export default develop;
