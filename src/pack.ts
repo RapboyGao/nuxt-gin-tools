@@ -16,7 +16,7 @@ function p(...names: string[]) {
 const DIST_PACKAGE = "dist/package";
 
 /** 需要打包的文件相对位置列表 */
-const FILE_LIST = ["vue/.output", "tmp/production.exe", "start.bat", "start.ps1", "start.sh", "ecosystem.config.js", "server.config.json"];
+const FILE_LIST = ["vue/.output", "tmp/production.exe", "ecosystem.config.js", "server.config.json"];
 
 /** package.json 文件夹相对于Workspace位置 */
 const PACKAGE_JSON = DIST_PACKAGE + "/package.json";
@@ -39,6 +39,12 @@ function copyFiles() {
     Fs.copySync(p(path), p(DIST_PACKAGE, path));
   }
 }
+
+function writeScriptFiles() {
+  Fs.outputFileSync(p(DIST_PACKAGE, "start.bat"), `powershell -ExecutionPolicy ByPass -File ./start.ps1`);
+  Fs.outputFileSync(p(DIST_PACKAGE, "start.ps1"), `./tmp/production.exe`);
+  Fs.outputFileSync(p(DIST_PACKAGE, "start.sh"), `./tmp/production.exe`);
+}
 /**
  * 打包文件为7z格式
  */
@@ -46,6 +52,7 @@ async function pack() {
   Fs.removeSync(p(DIST_PACKAGE));
   Fs.removeSync(p(_7Z_PATH));
   copyFiles();
+  writeScriptFiles();
   Fs.outputJSONSync(p(PACKAGE_JSON), PACKAGE_JSON_CONTENT, { spaces: 2 });
   Zip.pack(p(DIST_PACKAGE), p(_7Z_PATH), () => {
     Fs.removeSync(p(DIST_PACKAGE));
