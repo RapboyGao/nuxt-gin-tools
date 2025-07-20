@@ -6,10 +6,10 @@ const cwd = process.cwd();
 
 export function build() {
   ensureDirSync(join(cwd, "vue/.output"));
-  ensureFileSync(join(cwd, "tmp/production.exe"));
+  ensureFileSync(join(cwd, ".server/production.exe"));
   return concurrently([
     {
-      command: "go build -o ./tmp/production.exe .",
+      command: "go build -o ./.server/production.exe .",
       name: "go",
       prefixColor: "green",
     },

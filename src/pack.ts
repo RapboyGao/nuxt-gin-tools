@@ -27,14 +27,14 @@ export const ORIGINAL_DIST_PATH = Path.resolve(process.cwd(), "dist");
 export const PACKAGE_JSON_CONTENT = {
   private: true,
   scripts: {
-    start: "./tmp/production.exe", // 定义启动命令
+    start: "./.server/production.exe", // 定义启动命令
   },
 };
 
 // 定义需要复制到构建目录的文件映射关系
 export const FILES_TO_COPY = {
   "vue/.output": builtPath("vue/.output"), // Vue 应用构建输出
-  "tmp/production.exe": builtPath("tmp/production.exe"), // 生产环境可执行文件
+  ".server/production.exe": builtPath(".server/production.exe"), // 生产环境可执行文件
   "server.config.json": builtPath("server.config.json"), // 服务器配置文件
 };
 
@@ -45,9 +45,9 @@ function writeScriptFiles() {
   // 写入 Windows 批处理启动脚本
   FS.outputFileSync(builtPath("start.bat"), `powershell -ExecutionPolicy ByPass -File ./start.ps1`);
   // 写入 PowerShell 启动脚本
-  FS.outputFileSync(builtPath("start.ps1"), `./tmp/production.exe`);
+  FS.outputFileSync(builtPath("start.ps1"), `./.server/production.exe`);
   // 写入 Linux/macOS 启动脚本
-  FS.outputFileSync(builtPath("start.sh"), `./tmp/production.exe`);
+  FS.outputFileSync(builtPath("start.sh"), `./.server/production.exe`);
   // 写入 package.json 文件，使用 2 个空格缩进
   FS.outputJSONSync(builtPath("package.json"), PACKAGE_JSON_CONTENT, { spaces: 2 });
 }

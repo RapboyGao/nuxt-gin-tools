@@ -26,7 +26,7 @@ export function cleanUpBuild() {
   // 清理原始 dist 目录
   ifExistsRemove("dist");
   // 清理临时文件
-  ifExistsRemove("tmp");
+  ifExistsRemove(".server");
   // 清理 Vue 应用构建输出目录
   ifExistsRemove("vue/.output");
   // 清理 OpenAPI 生成的文件
