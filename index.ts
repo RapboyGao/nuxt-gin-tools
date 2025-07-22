@@ -13,6 +13,8 @@ import cleanUp from "./src/cleanup";
 // 导入更新功能
 import update from "./src/update";
 
+import chalk from "chalk";
+
 // 获取命令行参数（去除前两个默认参数）
 const args = process.argv.slice(2);
 
@@ -43,6 +45,7 @@ switch (args[0]) {
   case "cleanup":
     // 执行清理操作
     cleanUp();
+    console.log(chalk.bgBlue("----- 建议运行 'postinstall' 脚本-----"));
     break;
   case "update":
     // 更新依赖

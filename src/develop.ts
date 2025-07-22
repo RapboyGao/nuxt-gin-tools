@@ -1,7 +1,9 @@
 import concurrently from "concurrently";
-import { readJSONSync } from "fs-extra";
+import { existsSync, readJSONSync } from "fs-extra";
 import os from "os";
 import { join } from "path";
+import cleanUp from "./cleanup";
+import postInstall from "./postinstall";
 
 const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));
@@ -20,8 +22,14 @@ function getAirCommand() {
   }
 }
 
-export function develop() {
-  concurrently([
+export async function develop() {
+  // 如果不存在 .nuxt 目录或 go.sum 文件，则执行清理和安装后处理
+  // 这可以确保开发环境干净且依赖正确
+  if (!existsSync(join(cwd, "vue/.nuxt")) || !existsSync(join(cwd, "go.sum"))) {
+    await cleanUp();
+    await postInstall();
+  }
+  await concurrently([
     {
       command: getAirCommand(),
       name: "go",
@@ -32,7 +40,7 @@ export function develop() {
       name: "nuxt",
       prefixColor: "blue",
     },
-  ]);
+  ]).result;
 }
 
 export default develop;
