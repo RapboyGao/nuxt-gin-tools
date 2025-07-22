@@ -7,6 +7,8 @@ import * as FS from "fs-extra";
 // 导入路径处理模块，用于规范化和解析文件路径
 import * as Path from "path";
 
+import * as os from "os";
+
 /**
  * 生成相对于服务器构建目录的绝对路径
  * @param relativePath - 相对路径
@@ -23,6 +25,8 @@ export const SERVER_PATH = Path.resolve(process.cwd(), ".build/production/server
 // 定义原始 dist 目录路径，用于清理操作
 export const ORIGINAL_DIST_PATH = Path.resolve(process.cwd(), "dist");
 
+export const SERVER_EXECUTABLE = os.platform() === "win32" ? "server-production.exe" : "server-production"; // 根据操作系统选择可执行文件名
+
 // 定义打包后项目的 package.json 内容
 export const PACKAGE_JSON_CONTENT = {
   private: true,
@@ -34,7 +38,7 @@ export const PACKAGE_JSON_CONTENT = {
 // 定义需要复制到构建目录的文件映射关系
 export const FILES_TO_COPY = {
   "vue/.output": builtPath("vue/.output"), // Vue 应用构建输出
-  ".build/.server/production.exe": builtPath("server-production.exe"), // 生产环境可执行文件
+  [`.build/.server/production.exe`]: builtPath("server-production.exe"), // 生产环境可执行文件
   "server.config.json": builtPath("server.config.json"), // 服务器配置文件
 };
 
