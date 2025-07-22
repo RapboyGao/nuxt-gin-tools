@@ -108,7 +108,7 @@ dist
 .docusaurus
 
 # Serverless directories
-.serverless/
+.build/.serverless/
 
 # FuseBox cache
 .fusebox/
