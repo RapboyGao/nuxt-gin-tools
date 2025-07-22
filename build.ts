@@ -6,6 +6,7 @@ export async function build() {
   copySync("README.md", "dist/README.md");
   copySync("LICENSE", "dist/LICENSE");
   copySync("src/go-gin-server.json", "dist/src/go-gin-server.json");
+  copySync("src/server-config.json", "dist/src/server-config.json");
   // 执行并发命令
   await concurrently([
     {
