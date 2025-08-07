@@ -57,11 +57,19 @@ async function setVueBaseUrl() {
     await Fs.outputFile(VUE_API_RUNTIME_PATH, updatedContent, "utf-8");
 
     console.log("成功更新Vue API基础URL为相对路径");
-    return originalContent;
+    return;
   } catch (error) {
     console.error("更新Vue API基础URL失败:", error);
     throw error; // 将错误继续抛出，以便上层处理
   }
+}
+
+async function setGoRoutes() {
+  const GO_API_RUNTIME_PATH = Path.join(cwd, "server/api/routers.go");
+  const originalContent = await Fs.readFile(GO_API_RUNTIME_PATH, "utf-8");
+  const updatedContent = originalContent.replace(/getRoutes/g, "GetRoutes");
+  // overwrite
+  await Fs.outputFile(GO_API_RUNTIME_PATH, updatedContent, "utf-8");
 }
 
 /**
@@ -99,8 +107,11 @@ export async function apiGenerate() {
     await concurrently(commands).result;
 
     // 按顺序执行清理和配置任务
-    await removePaths();
-    await setVueBaseUrl();
+    let tasks: Promise<void>[] = [];
+    tasks.push(removePaths());
+    tasks.push(setVueBaseUrl());
+    tasks.push(setGoRoutes());
+    await Promise.all(tasks);
 
     console.log(chalk.bgGreen("API代码生成和配置完成!"));
   } catch (error) {
