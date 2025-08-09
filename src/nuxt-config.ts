@@ -35,6 +35,24 @@ export interface MyNuxtConfig {
  * 创建默认的 Nuxt 配置
  * @param param0 包含服务器配置和 API 基础路径的参数对象
  * @returns Nuxt 配置对象
+ * 
+ * 用法如下：
+ * ```typescript
+ * import { createDefaultConfig } from 'nuxt-gin-tools/src/nuxt-config';
+ * import type { NuxtConfig } from 'nuxt/config';
+ * import { defineNuxtConfig } from 'nuxt/config';
+ * import SERVER_CONFIG from './server.config.json';
+ * import { BASE_PATH } from './vue/composables/api/base';
+ * 
+ * const config = createDefaultConfig({
+ *   apiBasePath: BASE_PATH,
+ *   serverConfig: SERVER_CONFIG,
+ * }) as NuxtConfig;
+ * 
+ * export default defineNuxtConfig({
+ *   ...config,
+ * });
+ * ```
  */
 export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig) {
   /**
@@ -117,5 +135,3 @@ export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig)
     },
   };
 }
-
-export default createDefaultConfig;
