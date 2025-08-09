@@ -16,9 +16,9 @@ const serverConfig = readJSONSync(join(cwd, "server.config.json"));
  */
 function getAirCommand() {
   if (os.platform() === "darwin") {
-    return "~/go/bin/air";
+    return "~/go/bin/air -c node_modules/nuxt-gin-tools/.air.toml";
   } else {
-    return "air";
+    return "air -c node_modules/nuxt-gin-tools/.air.toml";
   }
 }
 
