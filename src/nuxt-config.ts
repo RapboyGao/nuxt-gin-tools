@@ -3,7 +3,7 @@ export interface ServerConfigJson {
    * 前端基础 URL
    * 用于指定前端路由的基础路径
    */
-  baseUrl: `/${string}`;
+  baseUrl: string;
   /**
    * Nuxt 端口号
    * 用于指定 Nuxt 项目的开发服务器端口号
@@ -24,7 +24,7 @@ export interface MyNuxtConfig {
    * 用于指定服务器端路由的基础路径
    * 例如，如果服务器端路由为 /api，则 serverBasePath 为 /api
    */
-  apiBasePath: `/${string}`;
+  apiBasePath: string;
   /**
    * 服务器配置
    * 包含服务器端的相关配置，如端口号、基础路径等
