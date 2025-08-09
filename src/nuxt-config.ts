@@ -38,12 +38,17 @@ export interface MyNuxtConfig {
  */
 export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig) {
   /**
+   * 处理基础路径，去除协议和域名部分，只保留路径部分
+   * 例如，将 "https://example.com/api-go" 转换为 "/api-go"
+   */
+  const thisBasePath = apiBasePath.replace(/^https?:[/]{2}[^/]+/, "");
+  /**
    * 目标服务器的 URL
    * 格式为：http://localhost:ginPort/serverBasePath
    * 其中，ginPort 是从 serverConfig 中获取的 Gin 服务器的端口号
    * serverBasePath 是从 MyNuxtConfig 中获取的服务器基础路径
    */
-  const target = `http://localhost:${serverConfig.ginPort}${apiBasePath}`;
+  const target = `http://localhost:${serverConfig.ginPort}${thisBasePath}`;
 
   return {
     buildDir: "vue/.nuxt", // 设置构建目录为 "vue/.nuxt"，表示 Nuxt 项目的构建输出将存放在该目录下
@@ -93,7 +98,7 @@ export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig)
       },
       devProxy: {
         // 定义代理规则，将匹配 thisBasePath 的请求代理到目标服务器
-        [apiBasePath]: {
+        [thisBasePath]: {
           // 目标服务器的 URL
           target: target,
           // 是否改变请求的源，设置为 true 可以避免跨域问题
