@@ -1,6 +1,6 @@
 {
   "name": "nuxt-gin-tools",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "This project is used as a dependency for [nuxt-gin-starter](https://github.com/RapboyGao/nuxt-gin-starter.git)",
   "bin": {
     "nuxt-gin": "index.js"
