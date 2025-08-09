@@ -1,5 +1,3 @@
-import type { NuxtConfig } from "nuxt/config";
-
 export interface ServerConfigJson {
   /**
    * 前端基础 URL
@@ -38,7 +36,7 @@ export interface MyNuxtConfig {
  * @param param0 包含服务器配置和 API 基础路径的参数对象
  * @returns Nuxt 配置对象
  */
-export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig): NuxtConfig {
+export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig) {
   /**
    * 目标服务器的 URL
    * 格式为：http://localhost:ginPort/serverBasePath
