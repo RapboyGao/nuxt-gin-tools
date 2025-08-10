@@ -1,6 +1,6 @@
 root = "."
 testdata_dir = "testdata"
-.build/.server_dir = ".build/.server"
+tmp_dir= ".build/.server"
 
 [build]
   args_bin = []

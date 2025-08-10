@@ -1,5 +1,5 @@
 import concurrently from "concurrently";
-import { existsSync, readJSONSync } from "fs-extra";
+import { existsSync, readJSONSync, ensureDirSync } from "fs-extra";
 import os from "os";
 import { join } from "path";
 import cleanUp from "./cleanup";
@@ -29,6 +29,7 @@ export async function develop() {
     await cleanUp();
     await postInstall();
   }
+  ensureDirSync(join(cwd, ".build/.server"));
   await concurrently([
     {
       command: getAirCommand(),
