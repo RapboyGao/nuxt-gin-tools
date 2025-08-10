@@ -1,5 +1,15 @@
 import concurrently from "concurrently";
-import { copySync, removeSync } from "fs-extra";
+import { copySync, readFileSync, writeFileSync } from "fs-extra";
+
+export async function handleNuxtConfig() {
+  let contents = readFileSync("./dist/src/nuxt-config.d.ts", "utf-8");
+  contents = `import type { NuxtConfig } from "nuxt/config";\n` + contents;
+  contents = contents.replace(
+    /export declare function createDefaultConfig\(\{ serverConfig, apiBasePath \}: MyNuxtConfig\)\:(.*|\n)+/gm,
+    `export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig): NuxtConfig;`
+  );
+  writeFileSync("./dist/src/nuxt-config.d.ts", contents);
+}
 
 export async function build() {
   copySync("package.json", "dist/package.json");
@@ -16,6 +26,8 @@ export async function build() {
       prefixColor: "green",
     },
   ]).result;
+
+  await handleNuxtConfig();
 }
 
 build();
