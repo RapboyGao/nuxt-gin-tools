@@ -17,6 +17,7 @@ export async function build() {
   copySync("LICENSE", "dist/LICENSE");
   copySync("src/go-gin-server.json", "dist/src/go-gin-server.json");
   copySync("src/server-config.json", "dist/src/server-config.json");
+  copySync("src/pack-config.schema.json", "dist/src/pack-config.schema.json");
   copySync(".air.toml", "dist/.air.toml");
   // 执行并发命令
   await concurrently([
