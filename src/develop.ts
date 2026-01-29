@@ -37,7 +37,7 @@ export async function develop() {
       prefixColor: "green",
     },
     {
-      command: `npx nuxt dev --port=${serverConfig.nuxtPort}`,
+      command: `npx nuxt dev --port=${serverConfig.nuxtPort} --host`,
       name: "nuxt",
       prefixColor: "blue",
     },
