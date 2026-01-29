@@ -1,0 +1,62 @@
+{
+  "title": "Nuxt Gin Tools Pack Config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "extraFiles": {
+      "type": "object",
+      "description": "额外需要打包的文件映射（key: 源文件路径，value: 打包后对应位置）",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "extraFilesGlobs": {
+      "type": "array",
+      "description": "额外需要打包的文件 Glob（相对于项目根目录）",
+      "items": {
+        "type": "string"
+      }
+    },
+    "exclude": {
+      "type": "array",
+      "description": "排除文件/目录 Glob（相对于项目根目录）",
+      "items": {
+        "type": "string"
+      }
+    },
+    "zipName": {
+      "type": "string",
+      "description": "打包输出 zip 名称（相对于默认 zip 目录）"
+    },
+    "zipPath": {
+      "type": "string",
+      "description": "打包输出 zip 路径（相对于项目根目录或绝对路径）"
+    },
+    "serverPath": {
+      "type": "string",
+      "description": "服务器构建输出目录（相对于项目根目录或绝对路径）"
+    },
+    "beforePack": {
+      "description": "打包前钩子（仅在代码调用传入时生效）"
+    },
+    "afterPack": {
+      "description": "打包后钩子（仅在代码调用传入时生效）"
+    },
+    "cleanDist": {
+      "type": "boolean",
+      "description": "是否清理 dist"
+    },
+    "writeScripts": {
+      "type": "boolean",
+      "description": "是否写入启动脚本和 package.json"
+    },
+    "packageJson": {
+      "type": "object",
+      "description": "写入/覆盖 package.json 内容"
+    },
+    "overwrite": {
+      "type": "boolean",
+      "description": "复制时是否覆盖同名文件"
+    }
+  }
+}
