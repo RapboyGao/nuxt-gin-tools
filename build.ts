@@ -18,8 +18,6 @@ export async function build() {
   copySync("src/go-gin-server.json", "dist/src/go-gin-server.json");
   copySync("src/server-config.json", "dist/src/server-config.json");
   copySync(".air.toml", "dist/.air.toml");
-  copySync("dev.go", "dist/dev.go");
-  copySync("go.mod", "dist/go.mod");
   // 执行并发命令
   await concurrently([
     {
