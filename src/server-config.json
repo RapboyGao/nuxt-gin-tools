@@ -15,6 +15,16 @@
       "title": "The base url for nuxt. / Nuxt的BaseUrl",
       "type": "string",
       "pattern": "^\\/\\w.+"
+    },
+    "killPortBeforeDevelop": {
+      "title": "Kill port before develop / 开发前释放端口",
+      "type": "boolean",
+      "default": true
+    },
+    "cleanupBeforeDevelop": {
+      "title": "Cleanup before develop / 开发前清理",
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

@@ -3,6 +3,7 @@ import { existsSync, readJSONSync, ensureDirSync } from "fs-extra";
 import os from "os";
 import { join } from "path";
 import { execSync } from "child_process";
+import chalk from "chalk";
 import cleanUp from "./cleanup";
 import postInstall from "./postinstall";
 
@@ -43,6 +44,9 @@ function killPort(port: number) {
     for (const pid of pids) {
       try {
         process.kill(pid, "SIGKILL");
+        console.log(
+          chalk.yellow(`Killed process ${pid} on port ${port} (unix)`),
+        );
       } catch {
         // Best-effort: if the process is already gone, ignore.
       }
@@ -91,6 +95,9 @@ function killPortWindows(port: number) {
         execSync(`taskkill /PID ${pid} /F`, {
           stdio: ["ignore", "ignore", "ignore"],
         });
+        console.log(
+          chalk.yellow(`Killed process ${pid} on port ${port} (win32)`),
+        );
       } catch {
         // Best-effort: if the process is already gone, ignore.
       }
@@ -114,14 +121,24 @@ function killPortsFromConfig() {
 }
 
 export async function develop() {
-  // 如果不存在 .nuxt 目录或 go.sum 文件，则执行清理和安装后处理
-  // 这可以确保开发环境干净且依赖正确
-  if (!existsSync(join(cwd, "vue/.nuxt")) || !existsSync(join(cwd, "go.sum"))) {
+  const cleanupBeforeDevelop = serverConfig.cleanupBeforeDevelop === true;
+  const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
+
+  // 如果配置为开发前清理，则直接执行清理和安装后处理
+  if (cleanupBeforeDevelop) {
     await cleanUp();
     await postInstall();
+  } else {
+    // 否则仅在关键依赖缺失时执行
+    if (!existsSync(join(cwd, "vue/.nuxt")) || !existsSync(join(cwd, "go.sum"))) {
+      await cleanUp();
+      await postInstall();
+    }
   }
   // 在开发前确保占用端口被释放
-  killPortsFromConfig();
+  if (killPortBeforeDevelop) {
+    killPortsFromConfig();
+  }
   ensureDirSync(join(cwd, ".build/.server"));
   await concurrently([
     {
