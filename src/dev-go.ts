@@ -1,10 +1,9 @@
 import { spawn, type ChildProcess } from "child_process";
-import { execSync } from "child_process";
 import chokidar from "chokidar";
 import chalk from "chalk";
 import { existsSync, readFileSync, readJSONSync } from "fs-extra";
-import os from "os";
 import { extname, isAbsolute, join, relative, resolve } from "path";
+import { killPort } from "./utils";
 
 const cwd = process.cwd();
 const RESTART_DEBOUNCE_MS = 150;
@@ -62,88 +61,11 @@ function getGinPort(): number | null {
   return null;
 }
 
-function killPortUnix(port: number) {
-  try {
-    const output = execSync(`lsof -ti tcp:${port}`, {
-      stdio: ["ignore", "pipe", "ignore"],
-    })
-      .toString()
-      .trim();
-    if (!output) {
-      return;
-    }
-    const pids = output
-      .split("\n")
-      .map((pid) => Number(pid.trim()))
-      .filter((pid) => Number.isInteger(pid) && pid > 0);
-    for (const pid of pids) {
-      try {
-        process.kill(pid, "SIGKILL");
-        console.log(chalk.yellow(`[${LOG_TAG}] killed process ${pid} on ginPort ${port} (unix)`));
-      } catch {
-        // best effort
-      }
-    }
-  } catch {
-    // best effort
-  }
-}
-
-function killPortWindows(port: number) {
-  try {
-    const output = execSync(`netstat -ano -p tcp`, {
-      stdio: ["ignore", "pipe", "ignore"],
-    })
-      .toString()
-      .trim();
-    if (!output) {
-      return;
-    }
-    const pids = new Set<number>();
-    for (const line of output.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith("TCP")) {
-        continue;
-      }
-      const parts = trimmed.split(/\s+/);
-      if (parts.length < 5) {
-        continue;
-      }
-      const localAddress = parts[1];
-      const pid = Number(parts[parts.length - 1]);
-      const match = localAddress.match(/:(\d+)$/);
-      if (!match) {
-        continue;
-      }
-      const localPort = Number(match[1]);
-      if (localPort === port && Number.isInteger(pid) && pid > 0) {
-        pids.add(pid);
-      }
-    }
-    for (const pid of pids) {
-      try {
-        execSync(`taskkill /PID ${pid} /F`, {
-          stdio: ["ignore", "ignore", "ignore"],
-        });
-        console.log(chalk.yellow(`[${LOG_TAG}] killed process ${pid} on ginPort ${port} (win32)`));
-      } catch {
-        // best effort
-      }
-    }
-  } catch {
-    // best effort
-  }
-}
-
 function killGinPortIfNeeded() {
   if (!ginPort) {
     return;
   }
-  if (os.platform() === "win32") {
-    killPortWindows(ginPort);
-    return;
-  }
-  killPortUnix(ginPort);
+  killPort(ginPort, { logPrefix: LOG_TAG, portLabel: "ginPort" });
 }
 
 function normalizePath(filePath: string): string {
