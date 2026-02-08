@@ -4,12 +4,14 @@ import chokidar from "chokidar";
 import chalk from "chalk";
 import { existsSync, readFileSync, readJSONSync } from "fs-extra";
 import os from "os";
+import { createInterface } from "readline";
 import { extname, isAbsolute, join, relative, resolve } from "path";
 
 const cwd = process.cwd();
 const RESTART_DEBOUNCE_MS = 150;
 const SHUTDOWN_TIMEOUT_MS = 2000;
 const LOG_TAG = "go-watch";
+const GO_OUTPUT_TAG = chalk.blue("[go]");
 const serverConfigPath = join(cwd, "server.config.json");
 const ginPort = getGinPort();
 
@@ -308,15 +310,37 @@ function quote(arg: string): string {
   return arg;
 }
 
+function forwardWithGoTag(
+  input: NodeJS.ReadableStream | null,
+  output: NodeJS.WriteStream,
+) {
+  if (!input) {
+    return;
+  }
+  const rl = createInterface({ input });
+  rl.on("line", (line) => {
+    output.write(`${GO_OUTPUT_TAG} ${line}\n`);
+  });
+}
+
 function runGoProcess(): ChildProcess {
   const command = `go run ${quote("main.go")}`;
   killGinPortIfNeeded();
   console.log(chalk.green(`[${LOG_TAG}] start: ${command}`));
-  return spawn(command, {
+  const proc = spawn(command, {
     cwd,
     shell: true,
-    stdio: "inherit",
+    env: {
+      ...process.env,
+      FORCE_COLOR: process.env.FORCE_COLOR ?? "1",
+      CLICOLOR: process.env.CLICOLOR ?? "1",
+      CLICOLOR_FORCE: process.env.CLICOLOR_FORCE ?? "1",
+    },
+    stdio: ["inherit", "pipe", "pipe"],
   });
+  forwardWithGoTag(proc.stdout, process.stdout);
+  forwardWithGoTag(proc.stderr, process.stderr);
+  return proc;
 }
 
 async function stopGoProcess(proc: ChildProcess | null): Promise<void> {
