@@ -9,6 +9,7 @@ const cwd = process.cwd();
 const RESTART_DEBOUNCE_MS = 150;
 const SHUTDOWN_TIMEOUT_MS = 2000;
 const LOG_TAG = "go-watch";
+const GO_WATCH_PREFIX = chalk.bgMagenta.white(`[${LOG_TAG}]`);
 const serverConfigPath = join(cwd, "server.config.json");
 const ginPort = getGinPort();
 
@@ -124,7 +125,7 @@ function loadWatchConfig(): GoWatchConfig {
     parsedConfig = JSON.parse(readFileSync(configPath, "utf-8")) as GoWatchConfigInput;
   } catch {
     console.warn(
-      chalk.green(`[${LOG_TAG}] invalid watch config JSON, fallback to defaults: ${configPath}`),
+      `${GO_WATCH_PREFIX} invalid watch config JSON, fallback to defaults: ${configPath}`,
     );
     return defaultConfig;
   }
@@ -233,7 +234,7 @@ function quote(arg: string): string {
 function runGoProcess(): ChildProcess {
   const command = `go run ${quote("main.go")}`;
   killGinPortIfNeeded();
-  console.log(chalk.green(`[${LOG_TAG}] start: ${command}`));
+  console.log(`${GO_WATCH_PREFIX} start: ${command}`);
   return spawn(command, {
     cwd,
     shell: true,
@@ -293,9 +294,7 @@ export async function startGoDev() {
     : [cwd];
 
   console.log(
-    chalk.green(
-      `[${LOG_TAG}] watching: ${watchRoots.map((item) => toProjectRelative(item)).join(", ")}`,
-    ),
+    `${GO_WATCH_PREFIX} watching: ${watchRoots.map((item) => toProjectRelative(item)).join(", ")}`,
   );
 
   let restarting = false;
@@ -326,7 +325,7 @@ export async function startGoDev() {
         return;
       }
       restarting = true;
-      console.log(chalk.green(`[${LOG_TAG}] ${eventName}: ${relPath}, restarting...`));
+      console.log(`${GO_WATCH_PREFIX} ${eventName}: ${relPath}, restarting...`);
       await stopGoProcess(goProc);
       goProc = runGoProcess();
       restarting = false;
@@ -338,7 +337,7 @@ export async function startGoDev() {
     .on("change", (filePath) => triggerRestart("change", filePath))
     .on("unlink", (filePath) => triggerRestart("unlink", filePath))
     .on("error", (error) => {
-      console.error(chalk.green(`[${LOG_TAG}] watcher error: ${String(error)}`));
+      console.error(`${GO_WATCH_PREFIX} watcher error: ${String(error)}`);
     });
 
   const shutdown = async () => {
@@ -364,7 +363,7 @@ export async function startGoDev() {
 if (require.main === module) {
   // 兼容直接执行该文件（例如 node src/dev-go.js）。
   startGoDev().catch((error) => {
-    console.error(chalk.green(`[${LOG_TAG}] failed to start: ${String(error)}`));
+    console.error(`${GO_WATCH_PREFIX} failed to start: ${String(error)}`);
     process.exit(1);
   });
 }
