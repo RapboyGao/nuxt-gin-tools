@@ -1,5 +1,5 @@
 import concurrently from "concurrently";
-import { copySync, readFileSync, writeFileSync } from "fs-extra";
+import { copySync, readFileSync, removeSync, writeFileSync } from "fs-extra";
 
 export async function handleNuxtConfig() {
   let contents = readFileSync("./dist/src/nuxt-config.d.ts", "utf-8");
@@ -12,6 +12,7 @@ export async function handleNuxtConfig() {
 }
 
 export async function build() {
+  removeSync("dist/.air.toml");
   copySync("package.json", "dist/package.json");
   copySync("README.md", "dist/README.md");
   copySync("LICENSE", "dist/LICENSE");
