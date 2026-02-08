@@ -11,7 +11,17 @@ const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));
 
 function getGoDevCommand() {
-  const scriptPath = join(__dirname, "dev-go.js");
+  const scriptCandidates = [
+    join(__dirname, "dev-go.js"),
+    join(__dirname, "..", "dist", "src", "dev-go.js"),
+    join(process.cwd(), "node_modules", "nuxt-gin-tools", "dist", "src", "dev-go.js"),
+  ];
+  const scriptPath = scriptCandidates.find((candidate) => existsSync(candidate));
+  if (!scriptPath) {
+    throw new Error(
+      "[nuxt-gin-tools] dev-go.js not found. Please reinstall nuxt-gin-tools.",
+    );
+  }
   return `"${process.execPath}" "${scriptPath}"`;
 }
 
