@@ -1,0 +1,20 @@
+{
+  "tmpDir": ".build/.server",
+  "testDataDir": "testdata",
+  "includeExt": ["go", "tpl", "html"],
+  "includeDir": [],
+  "includeFile": [],
+  "excludeDir": [
+    "assets",
+    ".build/.server",
+    "vendor",
+    "testdata",
+    "node_modules",
+    "vue",
+    "api",
+    ".vscode",
+    ".git"
+  ],
+  "excludeFile": [],
+  "excludeRegex": ["_test.go"]
+}

@@ -9,19 +9,10 @@ import postInstall from "./postinstall";
 
 const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));
-/**
- *
- * @returns {string} 返回air命令的路径
- * 根据操作系统不同，返回不同的路径
- * 如果是macOS，返回~/go/bin/air
- * 如果是其他操作系统，返回air
- */
-function getAirCommand() {
-  if (os.platform() === "darwin") {
-    return "~/go/bin/air -c node_modules/nuxt-gin-tools/.air.toml";
-  } else {
-    return "air -c node_modules/nuxt-gin-tools/.air.toml";
-  }
+
+function getGoDevCommand() {
+  const scriptPath = join(__dirname, "dev-go.js");
+  return `"${process.execPath}" "${scriptPath}"`;
 }
 
 function killPort(port: number) {
@@ -142,7 +133,7 @@ export async function develop() {
   ensureDirSync(join(cwd, ".build/.server"));
   await concurrently([
     {
-      command: getAirCommand(),
+      command: getGoDevCommand(),
       name: "go",
       prefixColor: "green",
     },
