@@ -6,24 +6,10 @@ import { execSync } from "child_process";
 import chalk from "chalk";
 import cleanUp from "./cleanup";
 import postInstall from "./postinstall";
+import { startGoDev } from "./dev-go";
 
 const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));
-
-function getGoDevCommand() {
-  const scriptCandidates = [
-    join(__dirname, "dev-go.js"),
-    join(__dirname, "..", "dist", "src", "dev-go.js"),
-    join(process.cwd(), "node_modules", "nuxt-gin-tools", "dist", "src", "dev-go.js"),
-  ];
-  const scriptPath = scriptCandidates.find((candidate) => existsSync(candidate));
-  if (!scriptPath) {
-    throw new Error(
-      "[nuxt-gin-tools] dev-go.js not found. Please reinstall nuxt-gin-tools.",
-    );
-  }
-  return `"${process.execPath}" "${scriptPath}"`;
-}
 
 function killPort(port: number) {
   if (!Number.isInteger(port)) {
@@ -121,6 +107,13 @@ function killPortsFromConfig() {
   }
 }
 
+/**
+ * 启动本地开发环境。
+ *
+ * 行为包括：按配置执行预清理、释放开发端口、并行启动 Nuxt 与 Go 监听流程。
+ *
+ * @returns {Promise<void>} 仅在开发进程退出或出现异常时返回。
+ */
 export async function develop() {
   const cleanupBeforeDevelop = serverConfig.cleanupBeforeDevelop === true;
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
@@ -141,18 +134,17 @@ export async function develop() {
     killPortsFromConfig();
   }
   ensureDirSync(join(cwd, ".build/.server"));
-  await concurrently([
-    {
-      command: getGoDevCommand(),
-      name: "go",
-      prefixColor: "green",
-    },
+  // Nuxt 保持在 concurrently 中运行，统一复用 nuxt 标签输出。
+  const nuxtTask = concurrently([
     {
       command: `npx nuxt dev --port=${serverConfig.nuxtPort} --host`,
       name: "nuxt",
       prefixColor: "blue",
     },
   ]).result;
+
+  // Go 侧直接调用本地 dev-go 逻辑，避免额外 shell 路径和引号问题。
+  await Promise.all([startGoDev(), nuxtTask]);
 }
 
 export default develop;

@@ -357,7 +357,14 @@ async function stopGoProcess(proc: ChildProcess | null): Promise<void> {
   });
 }
 
-async function start() {
+/**
+ * 启动 Go 开发监听流程：执行 `go run main.go`，并在文件变更后自动重启。
+ *
+ * 该函数通常由 `develop()` 调用；执行后会持续监听，直到收到退出信号。
+ *
+ * @returns {Promise<void>} 仅在监听流程被中断并完成清理后返回。
+ */
+export async function startGoDev() {
   const watchConfig = loadWatchConfig();
   const watchRoots = watchConfig.includeDir.length
     ? watchConfig.includeDir.map((dir) => join(cwd, dir))
@@ -432,7 +439,10 @@ async function start() {
   });
 }
 
-start().catch((error) => {
-  console.error(chalk.red(`[${LOG_TAG}] failed to start: ${String(error)}`));
-  process.exit(1);
-});
+if (require.main === module) {
+  // 兼容直接执行该文件（例如 node src/dev-go.js）。
+  startGoDev().catch((error) => {
+    console.error(chalk.red(`[${LOG_TAG}] failed to start: ${String(error)}`));
+    process.exit(1);
+  });
+}
