@@ -5,7 +5,7 @@ export function update() {
     {
       command: "pnpm update --latest",
       name: "pnpm",
-      prefixColor: "blue",
+      prefixColor: "magenta",
     },
     {
       command: "go get -u && go mod tidy",

@@ -124,7 +124,7 @@ function loadWatchConfig(): GoWatchConfig {
     parsedConfig = JSON.parse(readFileSync(configPath, "utf-8")) as GoWatchConfigInput;
   } catch {
     console.warn(
-      chalk.yellow(`[${LOG_TAG}] invalid watch config JSON, fallback to defaults: ${configPath}`),
+      chalk.green(`[${LOG_TAG}] invalid watch config JSON, fallback to defaults: ${configPath}`),
     );
     return defaultConfig;
   }
@@ -293,7 +293,7 @@ export async function startGoDev() {
     : [cwd];
 
   console.log(
-    chalk.cyan(
+    chalk.green(
       `[${LOG_TAG}] watching: ${watchRoots.map((item) => toProjectRelative(item)).join(", ")}`,
     ),
   );
@@ -326,7 +326,7 @@ export async function startGoDev() {
         return;
       }
       restarting = true;
-      console.log(chalk.yellow(`[${LOG_TAG}] ${eventName}: ${relPath}, restarting...`));
+      console.log(chalk.green(`[${LOG_TAG}] ${eventName}: ${relPath}, restarting...`));
       await stopGoProcess(goProc);
       goProc = runGoProcess();
       restarting = false;
@@ -338,7 +338,7 @@ export async function startGoDev() {
     .on("change", (filePath) => triggerRestart("change", filePath))
     .on("unlink", (filePath) => triggerRestart("unlink", filePath))
     .on("error", (error) => {
-      console.error(chalk.red(`[${LOG_TAG}] watcher error: ${String(error)}`));
+      console.error(chalk.green(`[${LOG_TAG}] watcher error: ${String(error)}`));
     });
 
   const shutdown = async () => {
@@ -364,7 +364,7 @@ export async function startGoDev() {
 if (require.main === module) {
   // 兼容直接执行该文件（例如 node src/dev-go.js）。
   startGoDev().catch((error) => {
-    console.error(chalk.red(`[${LOG_TAG}] failed to start: ${String(error)}`));
+    console.error(chalk.green(`[${LOG_TAG}] failed to start: ${String(error)}`));
     process.exit(1);
   });
 }
