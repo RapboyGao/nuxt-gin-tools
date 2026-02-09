@@ -3,7 +3,7 @@
 // 导入构建和打包功能
 import buildAndPack from "./src/pack";
 // 导入开发模式功能
-import develop from "./src/develop";
+import develop, { developGo, developNuxt } from "./src/develop";
 // 导入API生成功能
 import apiGenerate from "./src/api-generate";
 // 导入安装后处理功能
@@ -29,6 +29,14 @@ switch (args[0]) {
   case "dev":
     // 启动开发模式
     develop();
+    break;
+  case "dev:nuxt":
+    // 仅启动 Nuxt 开发模式
+    developNuxt();
+    break;
+  case "dev:go":
+    // 仅启动 Go 开发模式
+    developGo();
     break;
   case "build":
     // 执行构建和打包操作
