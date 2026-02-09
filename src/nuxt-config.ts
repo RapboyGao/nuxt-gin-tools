@@ -26,6 +26,12 @@ export interface MyNuxtConfig {
    */
   apiBasePath: string;
   /**
+   * WebSocket 代理基础路径列表（可选）
+   * 例如：["/ws-go", "/socket"]
+   * 会同时注入 Nitro devProxy 与 Vite proxy，默认启用 ws。
+   */
+  wsProxyBasePaths?: string[];
+  /**
    * 服务器配置
    * 包含服务器端的相关配置，如端口号、基础路径等
    */
@@ -54,7 +60,11 @@ export interface MyNuxtConfig {
  * });
  * ```
  */
-export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig) {
+export function createDefaultConfig({
+  serverConfig,
+  apiBasePath,
+  wsProxyBasePaths = [],
+}: MyNuxtConfig) {
   /**
    * 处理基础路径，去除协议和域名部分，只保留路径部分
    * 例如，将 "https://example.com/api-go" 转换为 "/api-go"
@@ -63,13 +73,42 @@ export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig)
   const normalizedProxyBasePath = thisBasePath.endsWith("/")
     ? thisBasePath.slice(0, -1)
     : thisBasePath;
+  const normalizeBasePath = (rawPath: string): string => {
+    const trimmed = rawPath.replace(/^https?:[/]{2}[^/]+/, "");
+    if (!trimmed) return "/";
+    if (trimmed === "/") return "/";
+    return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
+  };
+  const buildTarget = (basePath: string): string =>
+    `http://localhost:${serverConfig.ginPort}${basePath}`;
+
   /**
    * 目标服务器的 URL
    * 格式为：http://localhost:ginPort/serverBasePath
    * 其中，ginPort 是从 serverConfig 中获取的 Gin 服务器的端口号
    * serverBasePath 是从 MyNuxtConfig 中获取的服务器基础路径
    */
-  const target = `http://localhost:${serverConfig.ginPort}${normalizedProxyBasePath}`;
+  const target = buildTarget(normalizedProxyBasePath);
+
+  const proxyEntries: Record<
+    string,
+    { target: string; changeOrigin: boolean; ws: boolean }
+  > = {
+    [normalizedProxyBasePath]: {
+      target,
+      changeOrigin: true,
+      ws: true,
+    },
+  };
+
+  for (const rawPath of wsProxyBasePaths) {
+    const normalizedPath = normalizeBasePath(rawPath);
+    proxyEntries[normalizedPath] = {
+      target: buildTarget(normalizedPath),
+      changeOrigin: true,
+      ws: true,
+    };
+  }
 
   return {
     buildDir: "vue/.nuxt", // 设置构建目录为 "vue/.nuxt"，表示 Nuxt 项目的构建输出将存放在该目录下
@@ -117,28 +156,13 @@ export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig)
         // 设置输出目录为 "vue/.nuxt", 表示 Nitro 的构建输出
         dir: "vue/.output",
       },
-      devProxy: {
-        // 定义代理规则，将匹配 thisBasePath 的请求代理到目标服务器
-        [normalizedProxyBasePath]: {
-          // 目标服务器的 URL
-          target: target,
-          // 是否改变请求的源，设置为 true 可以避免跨域问题
-          changeOrigin: true,
-          // 启用 WebSocket 代理
-          ws: true,
-        },
-      },
+      // 定义代理规则，将匹配基础路径的请求代理到目标服务器
+      devProxy: proxyEntries,
     },
 
     vite: {
       server: {
-        proxy: {
-          [normalizedProxyBasePath]: {
-            target,
-            changeOrigin: true,
-            ws: true,
-          },
-        },
+        proxy: proxyEntries,
       },
       // 配置 Vite 插件
       plugins: [],

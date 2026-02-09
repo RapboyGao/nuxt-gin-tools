@@ -5,8 +5,8 @@ export async function handleNuxtConfig() {
   let contents = readFileSync("./dist/src/nuxt-config.d.ts", "utf-8");
   contents = `import type { NuxtConfig } from "nuxt/config";\n` + contents;
   contents = contents.replace(
-    /export declare function createDefaultConfig\(\{ serverConfig, apiBasePath \}: MyNuxtConfig\)\:(.*|\n)+/gm,
-    `export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig): NuxtConfig;`
+    /export declare function createDefaultConfig\((?:.|\n)*?\):[\s\S]*?;/gm,
+    `export function createDefaultConfig(config: MyNuxtConfig): NuxtConfig;`
   );
   writeFileSync("./dist/src/nuxt-config.d.ts", contents);
 }
