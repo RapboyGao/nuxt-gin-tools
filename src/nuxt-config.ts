@@ -60,13 +60,16 @@ export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig)
    * 例如，将 "https://example.com/api-go" 转换为 "/api-go"
    */
   const thisBasePath = apiBasePath.replace(/^https?:[/]{2}[^/]+/, "");
+  const normalizedProxyBasePath = thisBasePath.endsWith("/")
+    ? thisBasePath.slice(0, -1)
+    : thisBasePath;
   /**
    * 目标服务器的 URL
    * 格式为：http://localhost:ginPort/serverBasePath
    * 其中，ginPort 是从 serverConfig 中获取的 Gin 服务器的端口号
    * serverBasePath 是从 MyNuxtConfig 中获取的服务器基础路径
    */
-  const target = `http://localhost:${serverConfig.ginPort}${thisBasePath}`;
+  const target = `http://localhost:${serverConfig.ginPort}${normalizedProxyBasePath}`;
 
   return {
     buildDir: "vue/.nuxt", // 设置构建目录为 "vue/.nuxt"，表示 Nuxt 项目的构建输出将存放在该目录下
@@ -116,16 +119,27 @@ export function createDefaultConfig({ serverConfig, apiBasePath }: MyNuxtConfig)
       },
       devProxy: {
         // 定义代理规则，将匹配 thisBasePath 的请求代理到目标服务器
-        [thisBasePath]: {
+        [normalizedProxyBasePath]: {
           // 目标服务器的 URL
           target: target,
           // 是否改变请求的源，设置为 true 可以避免跨域问题
           changeOrigin: true,
+          // 启用 WebSocket 代理
+          ws: true,
         },
       },
     },
 
     vite: {
+      server: {
+        proxy: {
+          [normalizedProxyBasePath]: {
+            target,
+            changeOrigin: true,
+            ws: true,
+          },
+        },
+      },
       // 配置 Vite 插件
       plugins: [],
       // 配置 esbuild 编译器的选项
