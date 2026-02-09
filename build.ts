@@ -3,9 +3,11 @@ import { copySync, readFileSync, removeSync, writeFileSync } from "fs-extra";
 
 export async function handleNuxtConfig() {
   let contents = readFileSync("./dist/src/nuxt-config.d.ts", "utf-8");
-  contents = `import type { NuxtConfig } from "nuxt/config";\n` + contents;
+  if (!contents.includes(`import type { NuxtConfig } from "nuxt/config";`)) {
+    contents = `import type { NuxtConfig } from "nuxt/config";\n` + contents;
+  }
   contents = contents.replace(
-    /export declare function createDefaultConfig\((?:.|\n)*?\):[\s\S]*?;/gm,
+    /export declare function createDefaultConfig\((?:.|\n)*?\n\};/gm,
     `export function createDefaultConfig(config: MyNuxtConfig): NuxtConfig;`
   );
   writeFileSync("./dist/src/nuxt-config.d.ts", contents);
