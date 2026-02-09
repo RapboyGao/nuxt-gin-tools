@@ -79,8 +79,11 @@ export function createDefaultConfig({
     if (trimmed === "/") return "/";
     return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
   };
-  const buildTarget = (basePath: string): string =>
-    `http://localhost:${serverConfig.ginPort}${basePath}`;
+  // Proxy target should point to backend origin only.
+  // The matched route prefix (e.g. /api-go/v1, /ws-go) is preserved by proxy itself.
+  // If target also appends basePath, final upstream path becomes duplicated and can
+  // break websocket upgrades with ECONNRESET.
+  const buildTarget = (): string => `http://127.0.0.1:${serverConfig.ginPort}`;
 
   /**
    * 目标服务器的 URL
@@ -88,7 +91,7 @@ export function createDefaultConfig({
    * 其中，ginPort 是从 serverConfig 中获取的 Gin 服务器的端口号
    * serverBasePath 是从 MyNuxtConfig 中获取的服务器基础路径
    */
-  const target = buildTarget(normalizedProxyBasePath);
+  const target = buildTarget();
 
   const proxyEntries: Record<
     string,
@@ -104,7 +107,7 @@ export function createDefaultConfig({
   for (const rawPath of wsProxyBasePaths) {
     const normalizedPath = normalizeBasePath(rawPath);
     proxyEntries[normalizedPath] = {
-      target: buildTarget(normalizedPath),
+      target: buildTarget(),
       changeOrigin: true,
       ws: true,
     };
