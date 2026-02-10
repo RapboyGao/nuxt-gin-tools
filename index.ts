@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 // index.ts - 入口文件，用于处理命令行参数并调用相应的功能模块
 // 导入构建和打包功能
-import buildAndPack from "./src/pack";
+import buildAndPack from "./commands/pack";
 // 导入开发模式功能
-import develop, { developGo, developNuxt } from "./src/develop";
+import develop, { developGo, developNuxt } from "./commands/develop";
 // 导入API生成功能
-import apiGenerate from "./src/api-generate";
+import apiGenerate from "./commands/api-generate";
 // 导入安装后处理功能
-import postInstall from "./src/postinstall";
+import postInstall from "./commands/postinstall";
 // 导入清理功能
-import cleanUp from "./src/cleanup";
+import cleanUp from "./commands/cleanup";
 // 导入更新功能
-import update from "./src/update";
+import update from "./commands/update";
 
 import chalk from "chalk";
 

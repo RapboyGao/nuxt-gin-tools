@@ -4,7 +4,7 @@ import { join } from "path";
 import cleanUp from "./cleanup";
 import postInstall from "./postinstall";
 import { startGoDev } from "./dev-go";
-import { killPorts } from "./utils";
+import { killPorts } from "../src/utils";
 
 const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));

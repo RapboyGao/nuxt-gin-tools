@@ -3,7 +3,7 @@ import chokidar from "chokidar";
 import chalk from "chalk";
 import { existsSync, readFileSync, readJSONSync } from "fs-extra";
 import { extname, isAbsolute, join, relative, resolve } from "path";
-import { killPort } from "./utils";
+import { killPort } from "../src/utils";
 
 const cwd = process.cwd();
 const RESTART_DEBOUNCE_MS = 150;

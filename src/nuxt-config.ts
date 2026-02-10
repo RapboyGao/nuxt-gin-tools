@@ -1,3 +1,5 @@
+import { request, type IncomingMessage, type ServerResponse } from "node:http";
+
 export interface ServerConfigJson {
   /**
    * 前端基础 URL
@@ -65,6 +67,56 @@ export function createDefaultConfig({
   proxyBasePaths,
   wsProxyBasePaths,
 }: MyNuxtConfig) {
+  const normalizeBaseUrl = (value: string) => {
+    const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
+    if (withLeadingSlash !== "/" && withLeadingSlash.endsWith("/")) {
+      return withLeadingSlash.slice(0, -1);
+    }
+    return withLeadingSlash;
+  };
+  const normalizedBaseUrl = normalizeBaseUrl(serverConfig.baseUrl);
+  const isViteInternalRequest = (requestPath: string) => {
+    return (
+      requestPath.startsWith("/@vite") ||
+      requestPath.startsWith("/__vite") ||
+      requestPath.startsWith("/node_modules/") ||
+      requestPath.startsWith("/@id/")
+    );
+  };
+  const isBaseUrlRequest = (requestPath: string) => {
+    if (normalizedBaseUrl === "/") {
+      return true;
+    }
+    return requestPath === normalizedBaseUrl || requestPath.startsWith(`${normalizedBaseUrl}/`);
+  };
+  const forwardToGin = (req: IncomingMessage, res: ServerResponse) => {
+    const proxyReq = request(
+      {
+        hostname: "127.0.0.1",
+        port: serverConfig.ginPort,
+        path: req.url ?? "/",
+        method: req.method,
+        headers: {
+          ...req.headers,
+          host: `127.0.0.1:${serverConfig.ginPort}`,
+        },
+      },
+      (proxyRes) => {
+        res.writeHead(proxyRes.statusCode ?? 502, proxyRes.headers);
+        proxyRes.pipe(res);
+      },
+    );
+
+    proxyReq.on("error", (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      res.statusCode = 502;
+      res.setHeader("content-type", "application/json; charset=utf-8");
+      res.end(JSON.stringify({ error: "Bad Gateway", message }));
+    });
+
+    req.pipe(proxyReq);
+  };
+
   // Proxy target should point to backend origin only.
   // The matched route prefix (e.g. /api-go/v1, /ws-go) is preserved by proxy itself.
   // If target also appends basePath, final upstream path becomes duplicated and can
@@ -142,7 +194,32 @@ export function createDefaultConfig({
         proxy: viteProxy,
       },
       // 配置 Vite 插件
-      plugins: [],
+      plugins: [
+        {
+          name: "nuxt-gin-base-url-proxy",
+          configureServer(server: {
+            middlewares: {
+              use: (
+                fn: (
+                  req: IncomingMessage & { url?: string },
+                  res: ServerResponse,
+                  next: () => void,
+                ) => void,
+              ) => void;
+            };
+          }) {
+            server.middlewares.use((req, res, next) => {
+              const requestPath = (req.url ?? "/").split("?")[0] || "/";
+              // Vite 内部请求交给 Nuxt/Vite 自己处理，其它非 baseUrl 请求转发到 Gin。
+              if (!isViteInternalRequest(requestPath) && !isBaseUrlRequest(requestPath)) {
+                forwardToGin(req, res);
+                return;
+              }
+              next();
+            });
+          },
+        },
+      ],
       // 配置 esbuild 编译器的选项
       // 设置 jsxFactory 为 "h"，这是 Vue 3 中用于创建虚拟 DOM 的函数
       // 设置 jsxFragment 为 "Fragment"，用于处理 JSX 中的片段
