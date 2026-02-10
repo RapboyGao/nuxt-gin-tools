@@ -1,5 +1,5 @@
 import concurrently from "concurrently";
-import { ensureDirSync, ensureFileSync } from "fs-extra";
+import { ensureDirSync } from "fs-extra";
 import { join } from "path";
 
 const cwd = process.cwd();

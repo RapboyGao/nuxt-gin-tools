@@ -1,5 +1,6 @@
 import { request, type IncomingMessage, type ServerResponse } from "node:http";
 import type { Socket } from "node:net";
+import { join } from "node:path";
 
 export interface ServerConfigJson {
   /** 前端基础 URL */
@@ -134,6 +135,11 @@ export function createDefaultConfig({
   return {
     buildDir: "vue/.nuxt",
     srcDir: "vue",
+    nitro: {
+      output: {
+        dir: join(process.cwd(), "vue", ".output"),
+      },
+    },
     ssr: false,
     experimental: {
       payloadExtraction: false,
