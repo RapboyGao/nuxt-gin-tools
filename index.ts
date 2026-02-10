@@ -13,8 +13,6 @@ import cleanUp from "./commands/cleanup";
 // 导入更新功能
 import update from "./commands/update";
 
-import chalk from "chalk";
-
 // 获取命令行参数（去除前两个默认参数）
 const args = process.argv.slice(2);
 
