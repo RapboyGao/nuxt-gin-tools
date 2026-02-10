@@ -1,4 +1,5 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
+import { request, type IncomingMessage, type ServerResponse } from "node:http";
+import type { Socket } from "node:net";
 
 export interface ServerConfigJson {
   /** 前端基础 URL */
@@ -10,11 +11,6 @@ export interface ServerConfigJson {
 }
 
 export interface MyNuxtConfig {
-  /**
-   * 开发期是否将访问 Nuxt 端口（baseUrl 下的页面请求）重定向到 Gin 端口。
-   * 默认 true。
-   */
-  redirectNuxtToGinInDev?: boolean;
   /** 服务器配置 */
   serverConfig: ServerConfigJson;
 }
@@ -47,12 +43,85 @@ function isBaseUrlRequest(baseUrl: string, requestPath: string): boolean {
   return requestPath === baseUrl || requestPath.startsWith(`${baseUrl}/`);
 }
 
+function forwardToGin(ginPort: number, req: IncomingMessage, res: ServerResponse): void {
+  const proxyReq = request(
+    {
+      hostname: "127.0.0.1",
+      port: ginPort,
+      path: req.url ?? "/",
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: `127.0.0.1:${ginPort}`,
+      },
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode ?? 502, proxyRes.headers);
+      proxyRes.pipe(res);
+    },
+  );
+
+  proxyReq.on("error", (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    res.statusCode = 502;
+    res.setHeader("content-type", "application/json; charset=utf-8");
+    res.end(JSON.stringify({ error: "Bad Gateway", message }));
+  });
+
+  req.pipe(proxyReq);
+}
+
+function forwardWebSocketToGin(
+  ginPort: number,
+  req: IncomingMessage,
+  clientSocket: Socket,
+  clientHead: Buffer,
+): void {
+  const proxyReq = request({
+    hostname: "127.0.0.1",
+    port: ginPort,
+    path: req.url ?? "/",
+    method: req.method ?? "GET",
+    headers: {
+      ...req.headers,
+      host: `127.0.0.1:${ginPort}`,
+      connection: "Upgrade",
+    },
+  });
+
+  proxyReq.on("upgrade", (proxyRes, proxySocket, proxyHead) => {
+    const statusLine = `HTTP/1.1 ${proxyRes.statusCode ?? 101} ${proxyRes.statusMessage ?? "Switching Protocols"}\r\n`;
+    const headers = proxyRes.rawHeaders;
+    let headerText = "";
+    for (let i = 0; i < headers.length; i += 2) {
+      headerText += `${headers[i]}: ${headers[i + 1]}\r\n`;
+    }
+    clientSocket.write(`${statusLine}${headerText}\r\n`);
+
+    if (clientHead.length > 0) {
+      proxySocket.write(clientHead);
+    }
+    if (proxyHead.length > 0) {
+      clientSocket.write(proxyHead);
+    }
+
+    proxySocket.pipe(clientSocket).pipe(proxySocket);
+  });
+
+  proxyReq.on("error", () => {
+    if (!clientSocket.destroyed) {
+      clientSocket.destroy();
+    }
+  });
+
+  proxyReq.end();
+}
+
 /**
  * 创建默认的 Nuxt 配置。
  */
 export function createDefaultConfig({
   serverConfig,
-  redirectNuxtToGinInDev = true,
 }: MyNuxtConfig) {
   const baseUrl = normalizeBaseUrl(serverConfig.baseUrl);
 
@@ -83,7 +152,7 @@ export function createDefaultConfig({
       server: {},
       plugins: [
         {
-          name: "nuxt-gin-base-url-redirect",
+          name: "nuxt-gin-base-url-proxy",
           configureServer(server: {
             middlewares: {
               use: (
@@ -94,29 +163,41 @@ export function createDefaultConfig({
                 ) => void,
               ) => void;
             };
+            httpServer?: {
+              on: (
+                event: "upgrade",
+                listener: (
+                  req: IncomingMessage,
+                  socket: Socket,
+                  head: Buffer,
+                ) => void,
+              ) => void;
+            };
           }) {
             server.middlewares.use((req, res, next) => {
-              const requestUrl = req.url ?? "/";
-              const requestPath = requestUrl.split("?")[0] || "/";
-              const method = req.method ?? "GET";
-              const acceptsHtml =
-                typeof req.headers.accept === "string" &&
-                req.headers.accept.includes("text/html");
+              const requestPath = (req.url ?? "/").split("?")[0] || "/";
+              const shouldForward =
+                !isViteInternalRequest(requestPath) && !isBaseUrlRequest(baseUrl, requestPath);
 
-              if (
-                redirectNuxtToGinInDev === true &&
-                !isViteInternalRequest(requestPath) &&
-                isBaseUrlRequest(baseUrl, requestPath) &&
-                (method === "GET" || method === "HEAD") &&
-                acceptsHtml
-              ) {
-                res.statusCode = 307;
-                res.setHeader("Location", `http://127.0.0.1:${serverConfig.ginPort}${requestUrl}`);
-                res.end();
+              if (shouldForward) {
+                forwardToGin(serverConfig.ginPort, req, res);
                 return;
               }
+
               next();
             });
+
+            if (server.httpServer) {
+              server.httpServer.on("upgrade", (req, socket, head) => {
+                const requestPath = (req.url ?? "/").split("?")[0] || "/";
+                const shouldForward =
+                  !isViteInternalRequest(requestPath) && !isBaseUrlRequest(baseUrl, requestPath);
+
+                if (shouldForward) {
+                  forwardWebSocketToGin(serverConfig.ginPort, req, socket, head);
+                }
+              });
+            }
           },
         },
       ],
