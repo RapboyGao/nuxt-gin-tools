@@ -20,9 +20,15 @@ export interface ServerConfigJson {
 
 export interface MyNuxtConfig {
   /**
+   * 后端代理基础路径列表（可选）
+   * 例如：["/api", "/auth", "/ws-go"]
+   * 未传时默认使用 ["/api", "/ws"]。
+   */
+  proxyBasePaths?: string[];
+  /**
    * WebSocket 代理基础路径列表（可选）
    * 例如：["/ws-go", "/socket"]
-   * 会同时注入 Nitro devProxy 与 Vite proxy，默认启用 ws。
+   * 仅用于标记对应路径启用 ws（会并入 proxyBasePaths）。
    */
   wsProxyBasePaths?: string[];
   /**
@@ -54,19 +60,41 @@ export interface MyNuxtConfig {
  * });
  * ```
  */
-export function createDefaultConfig({ serverConfig }: MyNuxtConfig) {
+export function createDefaultConfig({
+  serverConfig,
+  proxyBasePaths,
+  wsProxyBasePaths,
+}: MyNuxtConfig) {
   // Proxy target should point to backend origin only.
   // The matched route prefix (e.g. /api-go/v1, /ws-go) is preserved by proxy itself.
   // If target also appends basePath, final upstream path becomes duplicated and can
   // break websocket upgrades with ECONNRESET.
   const buildTarget = (): string => `http://127.0.0.1:${serverConfig.ginPort}`;
-  const normalizedBaseUrl = serverConfig.baseUrl.endsWith("/")
-    ? serverConfig.baseUrl.slice(0, -1)
-    : serverConfig.baseUrl;
-  const escapedBaseUrl = normalizedBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  
-  // 匹配所有“不以 baseUrl 开头”的路径，例如 baseUrl=/vue 时会匹配 /api、/ws、/health 等。
-  const nonBaseUrlProxyPattern = `^/(?!${escapedBaseUrl.slice(1)}(?:/|$)).*`;
+  const defaultProxyBasePaths = ["/api", "/ws"];
+  const normalizePathPrefix = (value: string) => {
+    const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
+    return withLeadingSlash.endsWith("/") && withLeadingSlash.length > 1
+      ? withLeadingSlash.slice(0, -1)
+      : withLeadingSlash;
+  };
+  const normalizedProxyBasePaths = [
+    ...(proxyBasePaths ?? defaultProxyBasePaths),
+    ...(wsProxyBasePaths ?? []),
+  ]
+    .map(normalizePathPrefix)
+    .filter((item, index, list) => list.indexOf(item) === index);
+  const wsProxyPathSet = new Set((wsProxyBasePaths ?? ["/ws"]).map(normalizePathPrefix));
+  const viteProxy = normalizedProxyBasePaths.reduce(
+    (acc, pathPrefix) => {
+      acc[pathPrefix] = {
+        target: buildTarget(),
+        changeOrigin: true,
+        ws: wsProxyPathSet.has(pathPrefix),
+      };
+      return acc;
+    },
+    {} as Record<string, { target: string; changeOrigin: boolean; ws: boolean }>,
+  );
 
   return {
     buildDir: "vue/.nuxt", // 设置构建目录为 "vue/.nuxt"，表示 Nuxt 项目的构建输出将存放在该目录下
@@ -111,13 +139,7 @@ export function createDefaultConfig({ serverConfig }: MyNuxtConfig) {
     },
     vite: {
       server: {
-        proxy: {
-          [nonBaseUrlProxyPattern]: {
-            target: buildTarget(),
-            changeOrigin: true,
-            ws: true,
-          },
-        },
+        proxy: viteProxy,
       },
       // 配置 Vite 插件
       plugins: [],
