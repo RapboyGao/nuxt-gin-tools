@@ -88,6 +88,22 @@ Go 监听规则来自 `.go-watch.json`（见下文）。
 - `killPortBeforeDevelop`: 开发前是否释放端口（默认 `true`）
 - `cleanupBeforeDevelop`: 开发前是否执行 cleanup（默认 `false`）
 
+### 3) 开发环境向前端暴露 `ginPort`
+
+`createDefaultConfig` 会在 Nuxt `runtimeConfig.public` 中注入 `ginPort`：
+
+- 开发环境：`useRuntimeConfig().public.ginPort` 为 `server.config.json` 的 `ginPort`
+- 生产环境：`useRuntimeConfig().public.ginPort` 为 `null`
+- 所有环境：`useRuntimeConfig().public.isDevelopment` 直接暴露当前是否开发环境
+
+前端示例：
+
+```ts
+const config = useRuntimeConfig();
+const ginPort = config.public.ginPort;
+const isDevelopment = config.public.isDevelopment;
+```
+
 ### 2) `.go-watch.json`
 
 Go 监听配置文件，示例：
@@ -132,4 +148,3 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 
 - Go 侧热更新已不再依赖 Air。
 - 当前方案为：`chokidar` 监听文件变化 + 重启 `go run main.go`。
-

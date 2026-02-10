@@ -15,6 +15,10 @@ export interface MyNuxtConfig {
   serverConfig: ServerConfigJson;
 }
 
+function isDevEnvironment(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
 function normalizePathPrefix(value: string): string {
   const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
   if (withLeadingSlash !== "/" && withLeadingSlash.endsWith("/")) {
@@ -123,7 +127,9 @@ function forwardWebSocketToGin(
 export function createDefaultConfig({
   serverConfig,
 }: MyNuxtConfig) {
+  const development = isDevEnvironment();
   const baseUrl = normalizeBaseUrl(serverConfig.baseUrl);
+  const publicGinPort = development ? serverConfig.ginPort : null;
 
   return {
     buildDir: "vue/.nuxt",
@@ -138,6 +144,14 @@ export function createDefaultConfig({
       },
     },
     app: { baseURL: serverConfig.baseUrl },
+    runtimeConfig: {
+      public: {
+        // Frontend can read this via useRuntimeConfig().public.ginPort in dev.
+        ginPort: publicGinPort,
+        // Frontend can use this to branch dev/prod logic directly.
+        isDevelopment: development,
+      },
+    },
     devServer: {
       port: serverConfig.nuxtPort,
       cors: {
