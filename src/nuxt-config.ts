@@ -48,7 +48,11 @@ function isBaseUrlRequest(baseUrl: string, requestPath: string): boolean {
   return requestPath === baseUrl || requestPath.startsWith(`${baseUrl}/`);
 }
 
-function forwardToGin(ginPort: number, req: IncomingMessage, res: ServerResponse): void {
+function forwardToGin(
+  ginPort: number,
+  req: IncomingMessage,
+  res: ServerResponse,
+): void {
   const proxyReq = request(
     {
       hostname: "127.0.0.1",
@@ -125,9 +129,7 @@ function forwardWebSocketToGin(
 /**
  * 创建默认的 Nuxt 配置。
  */
-export function createDefaultConfig({
-  serverConfig,
-}: MyNuxtConfig) {
+export function createDefaultConfig({ serverConfig }: MyNuxtConfig) {
   const development = isDevEnvironment();
   const baseUrl = normalizeBaseUrl(serverConfig.baseUrl);
   const publicGinPort = development ? serverConfig.ginPort : null;
@@ -170,6 +172,9 @@ export function createDefaultConfig({
     },
     vite: {
       server: {},
+      optimizeDeps: {
+        include: ["@vue/devtools-core", "@vue/devtools-kit"],
+      },
       plugins: [
         {
           name: "nuxt-gin-base-url-proxy",
@@ -197,7 +202,8 @@ export function createDefaultConfig({
             server.middlewares.use((req, res, next) => {
               const requestPath = (req.url ?? "/").split("?")[0] || "/";
               const shouldForward =
-                !isViteInternalRequest(requestPath) && !isBaseUrlRequest(baseUrl, requestPath);
+                !isViteInternalRequest(requestPath) &&
+                !isBaseUrlRequest(baseUrl, requestPath);
 
               if (shouldForward) {
                 forwardToGin(serverConfig.ginPort, req, res);
@@ -211,10 +217,16 @@ export function createDefaultConfig({
               server.httpServer.on("upgrade", (req, socket, head) => {
                 const requestPath = (req.url ?? "/").split("?")[0] || "/";
                 const shouldForward =
-                  !isViteInternalRequest(requestPath) && !isBaseUrlRequest(baseUrl, requestPath);
+                  !isViteInternalRequest(requestPath) &&
+                  !isBaseUrlRequest(baseUrl, requestPath);
 
                 if (shouldForward) {
-                  forwardWebSocketToGin(serverConfig.ginPort, req, socket, head);
+                  forwardWebSocketToGin(
+                    serverConfig.ginPort,
+                    req,
+                    socket,
+                    head,
+                  );
                 }
               });
             }
