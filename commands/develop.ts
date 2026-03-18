@@ -9,8 +9,18 @@ import { killPorts } from "../src/utils";
 const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));
 
-async function prepareDevelop() {
+export type DevelopOptions = {
+  noCleanup?: boolean;
+  skipGo?: boolean;
+  skipNuxt?: boolean;
+};
+
+async function prepareDevelop(options: DevelopOptions = {}) {
   const cleanupBeforeDevelop = serverConfig.cleanupBeforeDevelop === true;
+  const shouldPrepare = !options.noCleanup;
+  if (!shouldPrepare) {
+    return;
+  }
   if (cleanupBeforeDevelop) {
     await cleanUp();
     await postInstall();
@@ -44,14 +54,24 @@ async function runGoDev() {
  *
  * @returns {Promise<void>} 仅在开发进程退出或出现异常时返回。
  */
-export async function develop() {
+export async function develop(options: DevelopOptions = {}) {
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
-  await prepareDevelop();
+  await prepareDevelop(options);
   // 在开发前确保占用端口被释放
   if (killPortBeforeDevelop) {
-    killPorts([serverConfig.ginPort, serverConfig.nuxtPort]);
+    killPorts([
+      options.skipGo ? undefined : serverConfig.ginPort,
+      options.skipNuxt ? undefined : serverConfig.nuxtPort,
+    ]);
   }
-  await Promise.all([runGoDev(), runNuxtDev()]);
+  const tasks: Array<Promise<void>> = [];
+  if (!options.skipGo) {
+    tasks.push(runGoDev());
+  }
+  if (!options.skipNuxt) {
+    tasks.push(runNuxtDev());
+  }
+  await Promise.all(tasks);
 }
 
 /**
@@ -59,9 +79,9 @@ export async function develop() {
  *
  * @returns {Promise<void>} 仅在开发进程退出或出现异常时返回。
  */
-export async function developNuxt() {
+export async function developNuxt(options: DevelopOptions = {}) {
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
-  await prepareDevelop();
+  await prepareDevelop(options);
   if (killPortBeforeDevelop) {
     killPorts([serverConfig.nuxtPort]);
   }
@@ -73,9 +93,9 @@ export async function developNuxt() {
  *
  * @returns {Promise<void>} 仅在开发进程退出或出现异常时返回。
  */
-export async function developGo() {
+export async function developGo(options: DevelopOptions = {}) {
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
-  await prepareDevelop();
+  await prepareDevelop(options);
   if (killPortBeforeDevelop) {
     killPorts([serverConfig.ginPort]);
   }

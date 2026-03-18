@@ -12,6 +12,7 @@ import postInstall from "./commands/postinstall";
 import cleanUp from "./commands/cleanup";
 // 导入更新功能
 import update from "./commands/update";
+import { getOption, hasFlag, parseCLIOptions } from "./src/cli-options";
 
 // 获取命令行参数（去除前两个默认参数）
 const args = process.argv.slice(2);
@@ -22,41 +23,62 @@ if (args.length === 0) {
   process.exit(1);
 }
 
-// 根据第一个参数执行对应的命令
-switch (args[0]) {
-  case "dev":
-    // 启动开发模式
-    develop();
-    break;
-  case "dev:nuxt":
-    // 仅启动 Nuxt 开发模式
-    developNuxt();
-    break;
-  case "dev:go":
-    // 仅启动 Go 开发模式
-    developGo();
-    break;
-  case "build":
-    // 执行构建和打包操作
-    buildAndPack();
-    break;
-  case "gen":
-    // 生成API代码（注：此处命令可能拼写错误，应为generate）
-    apiGenerate();
-    break;
-  case "install":
-    // 执行安装后的初始化操作
-    postInstall();
-    break;
-  case "cleanup":
-    // 执行清理操作
-    cleanUp();
-    break;
-  case "update":
-    // 更新依赖
-    update();
-    break;
-  default:
-    console.error(`未知命令: ${args[0]}`);
-    process.exit(1);
+async function main() {
+  const command = args[0];
+  const options = parseCLIOptions(args.slice(1));
+
+  switch (command) {
+    case "dev":
+      await develop({
+        noCleanup: hasFlag(options, "no-cleanup"),
+        skipGo: hasFlag(options, "skip-go"),
+        skipNuxt: hasFlag(options, "skip-nuxt"),
+      });
+      break;
+    case "dev:nuxt":
+      await developNuxt({
+        noCleanup: hasFlag(options, "no-cleanup"),
+      });
+      break;
+    case "dev:go":
+      await developGo({
+        noCleanup: hasFlag(options, "no-cleanup"),
+      });
+      break;
+    case "build":
+      await buildAndPack({
+        binaryName: getOption(options, "binary-name"),
+        skipGo: hasFlag(options, "skip-go"),
+        skipNuxt: hasFlag(options, "skip-nuxt"),
+      });
+      break;
+    case "gen":
+      // 生成API代码（注：此处命令可能拼写错误，应为generate）
+      await apiGenerate();
+      break;
+    case "install":
+      // 执行安装后的初始化操作
+      await postInstall();
+      break;
+    case "cleanup":
+      // 执行清理操作
+      await cleanUp();
+      break;
+    case "update":
+      // 更新依赖
+      await update({
+        latest: hasFlag(options, "latest"),
+        skipGo: hasFlag(options, "skip-go"),
+        skipNode: hasFlag(options, "skip-node"),
+      });
+      break;
+    default:
+      console.error(`未知命令: ${command}`);
+      process.exit(1);
+  }
 }
+
+void main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

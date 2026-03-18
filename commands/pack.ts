@@ -9,8 +9,9 @@ import * as Path from "path";
 
 import * as os from "os";
 import fg from "fast-glob";
+import type { BuildOptions } from "./builder";
 
-export interface PackConfig {
+export interface PackConfig extends BuildOptions {
   /**
    * 额外需要打包的文件映射
    * key: 源文件路径（相对于项目根目录或绝对路径）
@@ -80,20 +81,22 @@ export const SERVER_PATH = Path.resolve(process.cwd(), ".build/production/server
 export const ORIGINAL_DIST_PATH = Path.resolve(process.cwd(), "dist");
 export const PACK_CONFIG_PATH = Path.resolve(process.cwd(), "pack.config.json");
 
-export const SERVER_EXECUTABLE = os.platform() === "win32" ? "server-production.exe" : "server-production"; // 根据操作系统选择可执行文件名
+export const BUILD_EXECUTABLE = os.platform() === "win32" ? "production.exe" : "production";
+export const SERVER_EXECUTABLE =
+  os.platform() === "win32" ? "server-production.exe" : "server-production"; // 根据操作系统选择可执行文件名
 
 // 定义打包后项目的 package.json 内容
 export const PACKAGE_JSON_CONTENT = {
   private: true,
   scripts: {
-    start: "./server-production.exe", // 定义启动命令
+    start: `./${SERVER_EXECUTABLE}`, // 定义启动命令
   },
 };
 
 // 定义需要复制到构建目录的文件映射关系（目标为构建目录下的相对路径）
 const DEFAULT_FILES_TO_COPY = {
   "vue/.output": "vue/.output", // Vue 应用构建输出
-  [`.build/.server/production.exe`]: "server-production.exe", // 生产环境可执行文件
+  [`.build/.server/${BUILD_EXECUTABLE}`]: SERVER_EXECUTABLE, // 生产环境可执行文件
   "server.config.json": "server.config.json", // 服务器配置文件
 };
 
@@ -109,9 +112,9 @@ function writeScriptFiles(serverPath: string, config?: PackConfig) {
   // 写入 Windows 批处理启动脚本
   FS.outputFileSync(Path.resolve(serverPath, "start.bat"), `powershell -ExecutionPolicy ByPass -File ./start.ps1`);
   // 写入 PowerShell 启动脚本
-  FS.outputFileSync(Path.resolve(serverPath, "start.ps1"), `./server-production.exe`);
+  FS.outputFileSync(Path.resolve(serverPath, "start.ps1"), `./${SERVER_EXECUTABLE}`);
   // 写入 Linux/macOS 启动脚本
-  FS.outputFileSync(Path.resolve(serverPath, "start.sh"), `./server-production.exe`);
+  FS.outputFileSync(Path.resolve(serverPath, "start.sh"), `./${SERVER_EXECUTABLE}`);
   // 写入 package.json 文件，使用 2 个空格缩进
   const mergedPackageJson = mergePackageJson(PACKAGE_JSON_CONTENT, config?.packageJson);
   FS.outputJSONSync(Path.resolve(serverPath, "package.json"), mergedPackageJson, { spaces: 2 });
@@ -251,7 +254,7 @@ export async function buildAndPack(config?: PackConfig) {
   const resolvedConfig = config ?? readPackConfigFromCwd();
   const serverPath = resolveServerPath(resolvedConfig);
   const zipPath = resolveZipPath(resolvedConfig);
-  await build(); // 执行项目构建
+  await build(resolvedConfig); // 执行项目构建
   if (resolvedConfig?.beforePack) {
     await resolvedConfig.beforePack();
   }
