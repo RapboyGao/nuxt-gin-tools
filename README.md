@@ -1,101 +1,118 @@
-# nuxt-gin-tools
+# nuxt-gin-tools 🧰
 
-`nuxt-gin-tools` 是 `nuxt-gin-starter` 的配套开发工具包，提供 Nuxt + Gin 项目的统一命令入口。
+[![npm version](https://img.shields.io/npm/v/nuxt-gin-tools?style=flat-square)](https://www.npmjs.com/package/nuxt-gin-tools)
+[![npm downloads](https://img.shields.io/npm/dm/nuxt-gin-tools?style=flat-square)](https://www.npmjs.com/package/nuxt-gin-tools)
+[![Node](https://img.shields.io/badge/Node-18%2B-339933?logo=node.js&logoColor=white&style=flat-square)](https://nodejs.org)
+[![Nuxt](https://img.shields.io/badge/Nuxt-4.x-00DC82?logo=nuxt&logoColor=white&style=flat-square)](https://nuxt.com)
+[![Go](https://img.shields.io/badge/Go-supported-00ADD8?logo=go&logoColor=white&style=flat-square)](https://go.dev)
+[![License](https://img.shields.io/badge/license-MIT-0b5fff?style=flat-square)](./LICENSE)
 
-核心目标：
-- 一条命令启动前后端开发环境
-- 自动处理 Go 侧依赖和文件监听重启
-- 提供 OpenAPI 代码生成与构建打包辅助
+`nuxt-gin-tools` is the companion CLI for [`nuxt-gin-starter`](https://github.com/RapboyGao/nuxt-gin-starter.git), built to make **Nuxt + Gin** development feel like one coherent workflow instead of two separate toolchains.
 
-## 功能概览
+Quick Jump:
 
-- `nuxt-gin dev`
-  - 启动 Nuxt 开发服务
-  - 启动 Go 文件监听（基于 `chokidar`）
-  - Go 文件变化后自动重启 `go run main.go`
-- `nuxt-gin install`
-  - 执行 Nuxt prepare
-  - 如果检测到 Go，则执行 `go mod download && go mod tidy`
-- `nuxt-gin gen`
-  - 基于 `openapi.yaml` 生成 Go / TS API 代码
-- `nuxt-gin build`
-  - 执行项目构建与打包流程
-- `nuxt-gin cleanup`
-  - 清理开发产物
-- `nuxt-gin update`
-  - 执行依赖更新流程
+- [English](#english)
+- [中文](#中文)
 
-## 安装
+## English
 
-在 `nuxt-gin-starter` 项目中作为依赖安装：
+### ✨ Highlights
+
+- 🚀 One command to run Nuxt dev + Go watcher together
+- 🔁 Automatic Go restart on file changes with `chokidar`
+- 📦 Build-and-pack workflow for deployment artifacts
+- 🧩 `pack.config.ts` support with typed config helper
+- 🛡️ Config validation with `warn` and `error` feedback
+- 🔧 Useful CLI switches for partial workflows like `--skip-go`
+
+### 📦 Install
 
 ```bash
-pnpm add nuxt-gin-tools
+pnpm add -D nuxt-gin-tools
 ```
 
-## 快速开始
+### ⚡ Quick Start
 
 ```bash
-# 初始化依赖（可选）
+# optional bootstrap
 nuxt-gin install
 
-# 启动开发
+# start Nuxt + Go together
 nuxt-gin dev
 ```
 
-常用变体：
+Common variants:
 
 ```bash
-# 只跑前端
+# frontend only
 nuxt-gin dev --skip-go
 
-# 只跑 Go 监听
+# go watcher only
 nuxt-gin dev --skip-nuxt
 
-# 跳过预清理/预安装
+# skip cleanup / bootstrap checks
 nuxt-gin dev --no-cleanup
 ```
 
-## 命令说明
+### 🗂️ Commands
 
-### `nuxt-gin dev`
+#### `nuxt-gin dev`
 
-开发模式下会并行运行：
-- Nuxt：`npx nuxt dev --port=<nuxtPort> --host`
-- Go：监听变更并运行 `go run main.go`
+Runs the local development stack:
 
-Go 监听规则来自 `.go-watch.json`（见下文）。
+- Nuxt: `npx nuxt dev --port=<nuxtPort> --host`
+- Go: watches files and restarts `go run main.go`
 
-可用参数：
+Flags:
 
-- `--skip-go`：只启动 Nuxt
-- `--skip-nuxt`：只启动 Go
-- `--no-cleanup`：跳过 develop 前的 cleanup/install 检查
+- `--skip-go`: start Nuxt only
+- `--skip-nuxt`: start Go only
+- `--no-cleanup`: skip pre-cleanup and bootstrap checks
 
-### `nuxt-gin install`
+#### `nuxt-gin install`
 
-- 总是执行：`npx nuxt prepare`
-- 检测到 Go 时额外执行：`go mod download && go mod tidy`
+Bootstraps the project:
 
-### `nuxt-gin gen`
+- always runs `npx nuxt prepare`
+- if Go is available, also runs `go mod download && go mod tidy`
 
-依赖 `openapi-generator-cli`，默认会：
-- 生成 Go Gin server 相关代码
-- 生成 TypeScript axios 客户端代码
+#### `nuxt-gin gen`
 
-### `nuxt-gin build`
+Generates API code from `openapi.yaml`:
 
-执行工具链内置的构建与打包逻辑。
+- Go Gin server code
+- TypeScript axios client code
 
-可用参数：
+#### `nuxt-gin build`
 
-- `--skip-go`：跳过 Go 构建
-- `--skip-nuxt`：跳过 Nuxt 静态构建
-- `--binary-name <name>`：自定义 `.build/.server` 下的 Go 二进制名称
+Runs the build-and-pack flow.
 
-### `pack.config.ts` / `pack.config.json`
+Flags:
 
-`nuxt-gin build` 会自动读取项目根目录中的打包配置，优先级如下：
+- `--skip-go`: skip Go build
+- `--skip-nuxt`: skip Nuxt static build
+- `--binary-name <name>`: override the Go binary name under `.build/.server`
+
+#### `nuxt-gin cleanup`
+
+Removes generated temp files and build output.
+
+#### `nuxt-gin update`
+
+Updates project dependencies with a conservative default strategy:
+
+- Node: `pnpm update`
+- Go: `go get -u=patch ./... && go mod tidy`
+
+Flags:
+
+- `--latest`: switch to a more aggressive upgrade strategy
+- `--skip-go`: skip Go dependency updates
+- `--skip-node`: skip Node dependency updates
+
+### 🧩 `pack.config.ts` / `pack.config.json`
+
+`nuxt-gin build` can auto-load pack config from the project root with this priority:
 
 1. `pack.config.ts`
 2. `pack.config.js`
@@ -103,9 +120,9 @@ Go 监听规则来自 `.go-watch.json`（见下文）。
 4. `pack.config.mjs`
 5. `pack.config.json`
 
-如果同时存在多个配置文件，会输出 `warn`，并按上面的优先级选择第一个。
+If multiple config files exist, the CLI prints a `warn` and uses the first one by priority.
 
-推荐使用 `pack.config.ts`：
+Recommended TypeScript form:
 
 ```ts
 import createPackConfig from 'nuxt-gin-tools/src/pack';
@@ -119,7 +136,7 @@ export default createPackConfig({
 });
 ```
 
-兼容旧的 `pack.config.json`：
+Legacy JSON is still supported:
 
 ```json
 {
@@ -128,52 +145,51 @@ export default createPackConfig({
 }
 ```
 
-配置校验规则：
+Validation behavior:
 
-- 明显的类型错误会直接 `error` 并终止打包
-- 可继续执行但可能有歧义的情况会输出 `warn`
-- 例如 `zipPath` 与 `zipName` 同时出现时，会提示 `zipPath` 优先生效
+- ❌ obvious type problems produce an `error` and stop packing
+- ⚠️ ambiguous but survivable cases produce a `warn`
+- 📝 example: if both `zipPath` and `zipName` are present, `zipPath` wins and a warning is shown
 
-### `nuxt-gin cleanup`
+### 🧱 `pack.config.ts` Helper
 
-清理由工具链生成的临时目录和产物。
+Use the helper from [`src/pack.ts`](./src/pack.ts):
 
-### `nuxt-gin update`
+```ts
+import createPackConfig from 'nuxt-gin-tools/src/pack';
 
-执行项目约定的更新逻辑。
+export default createPackConfig({
+  serverPath: '.build/production/server',
+  zipName: 'release.7z',
+});
+```
 
-默认策略偏保守：
+It provides:
 
-- Node：`pnpm update`
-- Go：`go get -u=patch ./... && go mod tidy`
+- `PackConfig` type
+- `createPackConfig(config)` helper
+- default export as `createPackConfig`
 
-可用参数：
+### ⚙️ Runtime Config
 
-- `--latest`：切换为更激进的升级策略
-- `--skip-go`：跳过 Go 依赖更新
-- `--skip-node`：跳过 Node 依赖更新
+#### `server.config.json`
 
-## 配置
+`dev` reads this file for the main runtime wiring:
 
-### 1) `server.config.json`
+- `ginPort`: Gin server port
+- `nuxtPort`: Nuxt dev port
+- `baseUrl`: Nuxt base URL
+- `killPortBeforeDevelop`: whether to free ports before dev, default `true`
+- `cleanupBeforeDevelop`: whether to cleanup before dev, default `false`
 
-`dev` 命令会读取该文件，常用字段：
+#### Frontend Runtime Exposure
 
-- `ginPort`: Gin 服务端口
-- `nuxtPort`: Nuxt 开发端口
-- `baseUrl`: Nuxt baseUrl
-- `killPortBeforeDevelop`: 开发前是否释放端口（默认 `true`）
-- `cleanupBeforeDevelop`: 开发前是否执行 cleanup（默认 `false`）
+`createDefaultConfig` injects values into Nuxt `runtimeConfig.public`:
 
-### 3) 开发环境向前端暴露 `ginPort`
+- `public.ginPort`: available in development, `null` in production
+- `public.isDevelopment`: direct development flag
 
-`createDefaultConfig` 会在 Nuxt `runtimeConfig.public` 中注入 `ginPort`：
-
-- 开发环境：`useRuntimeConfig().public.ginPort` 为 `server.config.json` 的 `ginPort`
-- 生产环境：`useRuntimeConfig().public.ginPort` 为 `null`
-- 所有环境：`useRuntimeConfig().public.isDevelopment` 直接暴露当前是否开发环境
-
-前端示例：
+Example:
 
 ```ts
 const config = useRuntimeConfig();
@@ -181,9 +197,9 @@ const ginPort = config.public.ginPort;
 const isDevelopment = config.public.isDevelopment;
 ```
 
-### 2) `.go-watch.json`
+#### `.go-watch.json`
 
-Go 监听配置文件，示例：
+Go watcher rules come from `.go-watch.json`:
 
 ```json
 {
@@ -208,21 +224,252 @@ Go 监听配置文件，示例：
 }
 ```
 
-也支持环境变量指定路径：
+You can also point to a custom watcher config:
 
 ```bash
 NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 ```
 
-## 环境依赖
+### 🖥️ Environment
 
 - Node.js
 - pnpm
-- Go（需要运行 Gin 侧开发与依赖下载时）
-- `openapi-generator-cli`（仅 `nuxt-gin gen` 需要）
+- Go, if you need the Gin side to run
+- `openapi-generator-cli`, only for `nuxt-gin gen`
 
-## 说明
+### 📝 Notes
 
-- Go 侧热更新已不再依赖 Air。
-- 当前方案为：`chokidar` 监听文件变化 + 重启 `go run main.go`。
-- 打包时会按当前平台生成可执行文件名：Windows 默认 `.exe`，Linux/macOS 默认无扩展名。
+- 💨 Go hot reload no longer depends on Air
+- 👀 The current watcher model is `chokidar` + restart `go run main.go`
+- 🪟 Packaging uses platform-aware executable naming: Windows defaults to `.exe`, Linux/macOS defaults to no extension
+
+---
+
+## 中文
+
+### ✨ 功能亮点
+
+- 🚀 一条命令同时启动 Nuxt 与 Go 开发环境
+- 🔁 基于 `chokidar` 的 Go 文件监听与自动重启
+- 📦 内置构建与打包流程，适合产物发布
+- 🧩 支持 `pack.config.ts`，并提供类型化 helper
+- 🛡️ 对打包配置做校验，区分 `warn` 和 `error`
+- 🔧 支持 `--skip-go` 等局部开发参数
+
+### 📦 安装
+
+```bash
+pnpm add -D nuxt-gin-tools
+```
+
+### ⚡ 快速开始
+
+```bash
+# 可选：初始化依赖
+nuxt-gin install
+
+# 同时启动前后端开发环境
+nuxt-gin dev
+```
+
+常见变体：
+
+```bash
+# 仅启动前端
+nuxt-gin dev --skip-go
+
+# 仅启动 Go 监听
+nuxt-gin dev --skip-nuxt
+
+# 跳过预清理 / 预安装检查
+nuxt-gin dev --no-cleanup
+```
+
+### 🗂️ 命令说明
+
+#### `nuxt-gin dev`
+
+启动本地开发环境：
+
+- Nuxt：`npx nuxt dev --port=<nuxtPort> --host`
+- Go：监听文件变化并重启 `go run main.go`
+
+参数：
+
+- `--skip-go`：只启动 Nuxt
+- `--skip-nuxt`：只启动 Go
+- `--no-cleanup`：跳过 develop 前的 cleanup / bootstrap 检查
+
+#### `nuxt-gin install`
+
+用于初始化项目：
+
+- 总是执行 `npx nuxt prepare`
+- 检测到 Go 后，额外执行 `go mod download && go mod tidy`
+
+#### `nuxt-gin gen`
+
+基于 `openapi.yaml` 生成 API 代码：
+
+- Go Gin server 代码
+- TypeScript axios 客户端代码
+
+#### `nuxt-gin build`
+
+执行构建与打包流程。
+
+参数：
+
+- `--skip-go`：跳过 Go 构建
+- `--skip-nuxt`：跳过 Nuxt 静态构建
+- `--binary-name <name>`：覆盖 `.build/.server` 下的 Go 二进制名称
+
+#### `nuxt-gin cleanup`
+
+清理临时文件与构建产物。
+
+#### `nuxt-gin update`
+
+按偏保守的默认策略更新依赖：
+
+- Node：`pnpm update`
+- Go：`go get -u=patch ./... && go mod tidy`
+
+参数：
+
+- `--latest`：切换成更激进的升级策略
+- `--skip-go`：跳过 Go 依赖更新
+- `--skip-node`：跳过 Node 依赖更新
+
+### 🧩 `pack.config.ts` / `pack.config.json`
+
+`nuxt-gin build` 会自动读取项目根目录中的打包配置，优先级如下：
+
+1. `pack.config.ts`
+2. `pack.config.js`
+3. `pack.config.cjs`
+4. `pack.config.mjs`
+5. `pack.config.json`
+
+如果同时存在多个配置文件，CLI 会输出 `warn`，并按优先级选择第一个。
+
+推荐使用 TypeScript 写法：
+
+```ts
+import createPackConfig from 'nuxt-gin-tools/src/pack';
+
+export default createPackConfig({
+  zipName: 'server.7z',
+  extraFilesGlobs: ['prisma/**'],
+  packageJson: {
+    private: true,
+  },
+});
+```
+
+旧的 JSON 配置仍然兼容：
+
+```json
+{
+  "zipName": "server.7z",
+  "extraFilesGlobs": ["prisma/**"]
+}
+```
+
+校验规则：
+
+- ❌ 明显类型错误会直接 `error` 并终止打包
+- ⚠️ 可继续执行但存在歧义的情况会输出 `warn`
+- 📝 例如同时设置 `zipPath` 和 `zipName` 时，会提示 `zipPath` 优先生效
+
+### 🧱 `pack.config.ts` Helper
+
+可通过 [`src/pack.ts`](./src/pack.ts) 使用 helper：
+
+```ts
+import createPackConfig from 'nuxt-gin-tools/src/pack';
+
+export default createPackConfig({
+  serverPath: '.build/production/server',
+  zipName: 'release.7z',
+});
+```
+
+它提供：
+
+- `PackConfig` 类型
+- `createPackConfig(config)` 函数
+- 默认导出即 `createPackConfig`
+
+### ⚙️ 运行时配置
+
+#### `server.config.json`
+
+`dev` 命令会读取这个文件来确定运行方式：
+
+- `ginPort`：Gin 服务端口
+- `nuxtPort`：Nuxt 开发端口
+- `baseUrl`：Nuxt 的 base URL
+- `killPortBeforeDevelop`：开发前是否释放端口，默认 `true`
+- `cleanupBeforeDevelop`：开发前是否执行 cleanup，默认 `false`
+
+#### 前端运行时暴露
+
+`createDefaultConfig` 会把以下值注入 Nuxt `runtimeConfig.public`：
+
+- `public.ginPort`：开发环境可读，生产环境为 `null`
+- `public.isDevelopment`：当前是否为开发环境
+
+示例：
+
+```ts
+const config = useRuntimeConfig();
+const ginPort = config.public.ginPort;
+const isDevelopment = config.public.isDevelopment;
+```
+
+#### `.go-watch.json`
+
+Go 监听规则来自 `.go-watch.json`：
+
+```json
+{
+  "tmpDir": ".build/.server",
+  "testDataDir": "testdata",
+  "includeExt": ["go", "tpl", "html"],
+  "includeDir": [],
+  "includeFile": [],
+  "excludeDir": [
+    "assets",
+    ".build/.server",
+    "vendor",
+    "testdata",
+    "node_modules",
+    "vue",
+    "api",
+    ".vscode",
+    ".git"
+  ],
+  "excludeFile": [],
+  "excludeRegex": ["_test.go"]
+}
+```
+
+也支持通过环境变量指定：
+
+```bash
+NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
+```
+
+### 🖥️ 环境依赖
+
+- Node.js
+- pnpm
+- Go，若需要运行 Gin 侧开发流程
+- `openapi-generator-cli`，仅 `nuxt-gin gen` 需要
+
+### 📝 说明
+
+- 💨 Go 热更新不再依赖 Air
+- 👀 当前 Go 开发监听方案为 `chokidar` + 重启 `go run main.go`
+- 🪟 打包时会按平台生成可执行文件名：Windows 默认 `.exe`，Linux/macOS 默认无扩展名
