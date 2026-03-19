@@ -24,6 +24,7 @@ Quick Jump:
 - 🧩 `pack.config.ts` support with typed config helper
 - 🛡️ Config validation with `warn` and `error` feedback
 - 🔧 Useful CLI switches for partial workflows like `--skip-go`
+- 🎨 Colorful command banners and clearer terminal feedback
 
 ### 📦 Install
 
@@ -62,6 +63,7 @@ Runs the local development stack:
 
 - Nuxt: `npx nuxt dev --port=<nuxtPort> --host`
 - Go: watches files and restarts `go run main.go`
+- prints a styled command banner before startup
 
 Flags:
 
@@ -75,10 +77,17 @@ Bootstraps the project:
 
 - always runs `npx nuxt prepare`
 - if Go is available, also runs `go mod download && go mod tidy`
+- prints a styled command banner before execution
 
 #### `nuxt-gin build`
 
 Runs the build-and-pack flow.
+
+Terminal output includes:
+
+- a styled command banner at startup
+- the final `.7z` archive path after packing
+- the bundle directory path used to assemble the release
 
 Flags:
 
@@ -89,6 +98,8 @@ Flags:
 #### `nuxt-gin cleanup`
 
 Removes generated temp files and build output.
+
+Also prints a styled command banner before cleanup starts.
 
 #### `nuxt-gin update`
 
@@ -102,6 +113,8 @@ Flags:
 - `--latest`: switch to a more aggressive upgrade strategy
 - `--skip-go`: skip Go dependency updates
 - `--skip-node`: skip Node dependency updates
+
+Also prints a styled command banner before execution.
 
 ### 🧩 `pack.config.ts` / `pack.config.json`
 
@@ -235,6 +248,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 💨 Go hot reload no longer depends on Air
 - 👀 The current watcher model is `chokidar` + restart `go run main.go`
 - 🪟 Packaging uses platform-aware executable naming: Windows defaults to `.exe`, Linux/macOS defaults to no extension
+- 🌈 Main commands print a consistent banner and clearer success/info output in the terminal
 
 ---
 
@@ -248,6 +262,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 🧩 支持 `pack.config.ts`，并提供类型化 helper
 - 🛡️ 对打包配置做校验，区分 `warn` 和 `error`
 - 🔧 支持 `--skip-go` 等局部开发参数
+- 🎨 提供更醒目的彩色命令行 banner 与输出提示
 
 ### 📦 安装
 
@@ -286,6 +301,7 @@ nuxt-gin dev --no-cleanup
 
 - Nuxt：`npx nuxt dev --port=<nuxtPort> --host`
 - Go：监听文件变化并重启 `go run main.go`
+- 启动前会输出一段样式化 banner
 
 参数：
 
@@ -299,10 +315,17 @@ nuxt-gin dev --no-cleanup
 
 - 总是执行 `npx nuxt prepare`
 - 检测到 Go 后，额外执行 `go mod download && go mod tidy`
+- 执行前会输出一段样式化 banner
 
 #### `nuxt-gin build`
 
 执行构建与打包流程。
+
+命令行输出会额外包含：
+
+- 启动时的样式化 banner
+- 打包完成后的 `.7z` 文件绝对路径
+- 组装发布产物时使用的 bundle 目录路径
 
 参数：
 
@@ -313,6 +336,8 @@ nuxt-gin dev --no-cleanup
 #### `nuxt-gin cleanup`
 
 清理临时文件与构建产物。
+
+执行前也会输出一段样式化 banner。
 
 #### `nuxt-gin update`
 
@@ -326,6 +351,8 @@ nuxt-gin dev --no-cleanup
 - `--latest`：切换成更激进的升级策略
 - `--skip-go`：跳过 Go 依赖更新
 - `--skip-node`：跳过 Node 依赖更新
+
+执行前也会输出一段样式化 banner。
 
 ### 🧩 `pack.config.ts` / `pack.config.json`
 
@@ -459,3 +486,4 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 💨 Go 热更新不再依赖 Air
 - 👀 当前 Go 开发监听方案为 `chokidar` + 重启 `go run main.go`
 - 🪟 打包时会按平台生成可执行文件名：Windows 默认 `.exe`，Linux/macOS 默认无扩展名
+- 🌈 主要命令会输出统一风格的 banner，并提供更清晰的成功 / 信息提示
