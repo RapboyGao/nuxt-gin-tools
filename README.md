@@ -43,6 +43,19 @@ nuxt-gin install
 nuxt-gin dev
 ```
 
+常用变体：
+
+```bash
+# 只跑前端
+nuxt-gin dev --skip-go
+
+# 只跑 Go 监听
+nuxt-gin dev --skip-nuxt
+
+# 跳过预清理/预安装
+nuxt-gin dev --no-cleanup
+```
+
 ## 命令说明
 
 ### `nuxt-gin dev`
@@ -52,6 +65,12 @@ nuxt-gin dev
 - Go：监听变更并运行 `go run main.go`
 
 Go 监听规则来自 `.go-watch.json`（见下文）。
+
+可用参数：
+
+- `--skip-go`：只启动 Nuxt
+- `--skip-nuxt`：只启动 Go
+- `--no-cleanup`：跳过 develop 前的 cleanup/install 检查
 
 ### `nuxt-gin install`
 
@@ -68,6 +87,12 @@ Go 监听规则来自 `.go-watch.json`（见下文）。
 
 执行工具链内置的构建与打包逻辑。
 
+可用参数：
+
+- `--skip-go`：跳过 Go 构建
+- `--skip-nuxt`：跳过 Nuxt 静态构建
+- `--binary-name <name>`：自定义 `.build/.server` 下的 Go 二进制名称
+
 ### `nuxt-gin cleanup`
 
 清理由工具链生成的临时目录和产物。
@@ -75,6 +100,17 @@ Go 监听规则来自 `.go-watch.json`（见下文）。
 ### `nuxt-gin update`
 
 执行项目约定的更新逻辑。
+
+默认策略偏保守：
+
+- Node：`pnpm update`
+- Go：`go get -u=patch ./... && go mod tidy`
+
+可用参数：
+
+- `--latest`：切换为更激进的升级策略
+- `--skip-go`：跳过 Go 依赖更新
+- `--skip-node`：跳过 Node 依赖更新
 
 ## 配置
 
@@ -148,3 +184,4 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 
 - Go 侧热更新已不再依赖 Air。
 - 当前方案为：`chokidar` 监听文件变化 + 重启 `go run main.go`。
+- 打包时会按当前平台生成可执行文件名：Windows 默认 `.exe`，Linux/macOS 默认无扩展名。
