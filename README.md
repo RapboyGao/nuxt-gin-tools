@@ -93,6 +93,47 @@ Go 监听规则来自 `.go-watch.json`（见下文）。
 - `--skip-nuxt`：跳过 Nuxt 静态构建
 - `--binary-name <name>`：自定义 `.build/.server` 下的 Go 二进制名称
 
+### `pack.config.ts` / `pack.config.json`
+
+`nuxt-gin build` 会自动读取项目根目录中的打包配置，优先级如下：
+
+1. `pack.config.ts`
+2. `pack.config.js`
+3. `pack.config.cjs`
+4. `pack.config.mjs`
+5. `pack.config.json`
+
+如果同时存在多个配置文件，会输出 `warn`，并按上面的优先级选择第一个。
+
+推荐使用 `pack.config.ts`：
+
+```ts
+import createPackConfig from 'nuxt-gin-tools/src/pack';
+
+export default createPackConfig({
+  zipName: 'server.7z',
+  extraFilesGlobs: ['prisma/**'],
+  packageJson: {
+    private: true,
+  },
+});
+```
+
+兼容旧的 `pack.config.json`：
+
+```json
+{
+  "zipName": "server.7z",
+  "extraFilesGlobs": ["prisma/**"]
+}
+```
+
+配置校验规则：
+
+- 明显的类型错误会直接 `error` 并终止打包
+- 可继续执行但可能有歧义的情况会输出 `warn`
+- 例如 `zipPath` 与 `zipName` 同时出现时，会提示 `zipPath` 优先生效
+
 ### `nuxt-gin cleanup`
 
 清理由工具链生成的临时目录和产物。

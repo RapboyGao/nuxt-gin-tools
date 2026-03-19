@@ -9,60 +9,9 @@ import * as Path from "path";
 
 import * as os from "os";
 import fg from "fast-glob";
-import type { BuildOptions } from "./builder";
+import type { PackConfig } from "../src/pack";
 
-export interface PackConfig extends BuildOptions {
-  /**
-   * 额外需要打包的文件映射
-   * key: 源文件路径（相对于项目根目录或绝对路径）
-   * value: 打包后对应位置（相对于服务器构建目录或绝对路径）
-   */
-  extraFiles?: Record<string, string>;
-  /**
-   * 额外需要打包的文件 Glob（相对于项目根目录）
-   */
-  extraFilesGlobs?: string[];
-  /**
-   * 排除文件/目录 Glob（相对于项目根目录）
-   */
-  exclude?: string[];
-  /**
-   * 打包输出 zip 名称（相对于默认 zip 目录）
-   */
-  zipName?: string;
-  /**
-   * 打包输出 zip 路径（相对于项目根目录或绝对路径）
-   */
-  zipPath?: string;
-  /**
-   * 服务器构建输出目录（相对于项目根目录或绝对路径）
-   */
-  serverPath?: string;
-  /**
-   * 打包前钩子
-   */
-  beforePack?: () => Promise<void> | void;
-  /**
-   * 打包后钩子
-   */
-  afterPack?: (zipPath: string) => Promise<void> | void;
-  /**
-   * 是否清理 dist
-   */
-  cleanDist?: boolean;
-  /**
-   * 是否写入启动脚本和 package.json
-   */
-  writeScripts?: boolean;
-  /**
-   * 写入/覆盖 package.json 内容
-   */
-  packageJson?: Record<string, unknown>;
-  /**
-   * 复制时是否覆盖同名文件
-   */
-  overwrite?: boolean;
-}
+const { createJiti } = require("jiti");
 
 /**
  * 生成相对于服务器构建目录的绝对路径
@@ -80,6 +29,10 @@ export const SERVER_PATH = Path.resolve(process.cwd(), ".build/production/server
 // 定义原始 dist 目录路径，用于清理操作
 export const ORIGINAL_DIST_PATH = Path.resolve(process.cwd(), "dist");
 export const PACK_CONFIG_PATH = Path.resolve(process.cwd(), "pack.config.json");
+export const PACK_CONFIG_TS_PATH = Path.resolve(process.cwd(), "pack.config.ts");
+export const PACK_CONFIG_JS_PATH = Path.resolve(process.cwd(), "pack.config.js");
+export const PACK_CONFIG_CJS_PATH = Path.resolve(process.cwd(), "pack.config.cjs");
+export const PACK_CONFIG_MJS_PATH = Path.resolve(process.cwd(), "pack.config.mjs");
 
 export const BUILD_EXECUTABLE = os.platform() === "win32" ? "production.exe" : "production";
 export const SERVER_EXECUTABLE =
@@ -104,6 +57,122 @@ const DEFAULT_FILES_TO_COPY = {
 export const FILES_TO_COPY = Object.fromEntries(
   Object.entries(DEFAULT_FILES_TO_COPY).map(([src, dest]) => [src, builtPath(dest)]),
 );
+
+type PackConfigIssueLevel = "warn" | "error";
+
+type PackConfigIssue = {
+  level: PackConfigIssueLevel;
+  message: string;
+};
+
+function warnPackConfig(message: string) {
+  console.warn(`[nuxt-gin-tools][pack] WARN: ${message}`);
+}
+
+function errorPackConfig(message: string): never {
+  throw new Error(`[nuxt-gin-tools][pack] ${message}`);
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateStringArray(
+  fieldName: string,
+  value: unknown,
+  issues: PackConfigIssue[],
+) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    issues.push({ level: "error", message: `${fieldName} must be an array of strings` });
+    return;
+  }
+  for (const item of value) {
+    if (typeof item !== "string") {
+      issues.push({ level: "error", message: `${fieldName} must contain only strings` });
+      return;
+    }
+  }
+}
+
+function validateStringRecord(
+  fieldName: string,
+  value: unknown,
+  issues: PackConfigIssue[],
+) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isPlainObject(value)) {
+    issues.push({ level: "error", message: `${fieldName} must be an object of string to string` });
+    return;
+  }
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof key !== "string" || typeof item !== "string") {
+      issues.push({ level: "error", message: `${fieldName} must be an object of string to string` });
+      return;
+    }
+  }
+}
+
+function validatePackConfig(config: unknown, sourcePath: string): PackConfig {
+  if (!isPlainObject(config)) {
+    errorPackConfig(`${Path.basename(sourcePath)} must export an object`);
+  }
+
+  const issues: PackConfigIssue[] = [];
+  const typedConfig = config as Record<string, unknown>;
+
+  const stringFields = ["binaryName", "zipName", "zipPath", "serverPath"];
+  for (const field of stringFields) {
+    const value = typedConfig[field];
+    if (value !== undefined && typeof value !== "string") {
+      issues.push({ level: "error", message: `${field} must be a string` });
+    }
+  }
+
+  const booleanFields = ["skipGo", "skipNuxt", "cleanDist", "writeScripts", "overwrite"];
+  for (const field of booleanFields) {
+    const value = typedConfig[field];
+    if (value !== undefined && typeof value !== "boolean") {
+      issues.push({ level: "error", message: `${field} must be a boolean` });
+    }
+  }
+
+  validateStringArray("extraFilesGlobs", typedConfig.extraFilesGlobs, issues);
+  validateStringArray("exclude", typedConfig.exclude, issues);
+  validateStringRecord("extraFiles", typedConfig.extraFiles, issues);
+
+  if (typedConfig.packageJson !== undefined && !isPlainObject(typedConfig.packageJson)) {
+    issues.push({ level: "error", message: `packageJson must be an object` });
+  }
+  if (typedConfig.beforePack !== undefined && typeof typedConfig.beforePack !== "function") {
+    issues.push({ level: "error", message: `beforePack must be a function` });
+  }
+  if (typedConfig.afterPack !== undefined && typeof typedConfig.afterPack !== "function") {
+    issues.push({ level: "error", message: `afterPack must be a function` });
+  }
+  if (typedConfig.zipName !== undefined && typedConfig.zipPath !== undefined) {
+    issues.push({ level: "warn", message: `zipPath and zipName are both set; zipPath takes precedence` });
+  }
+  if (typedConfig.skipGo === true && typedConfig.skipNuxt === true) {
+    issues.push({ level: "warn", message: `skipGo and skipNuxt are both true; build step will be skipped` });
+  }
+
+  for (const issue of issues) {
+    if (issue.level === "warn") {
+      warnPackConfig(`${Path.basename(sourcePath)}: ${issue.message}`);
+    }
+  }
+  const errors = issues.filter((issue) => issue.level === "error");
+  if (errors.length > 0) {
+    errorPackConfig(`${Path.basename(sourcePath)} is invalid:\n- ${errors.map((item) => item.message).join("\n- ")}`);
+  }
+
+  return config as PackConfig;
+}
 
 /**
  * 写入启动脚本和 package.json 文件到构建目录
@@ -181,11 +250,39 @@ function mergePackageJson(
 }
 
 function readPackConfigFromCwd(): PackConfig | undefined {
-  if (!FS.existsSync(PACK_CONFIG_PATH)) {
+  const candidates = [
+    PACK_CONFIG_TS_PATH,
+    PACK_CONFIG_JS_PATH,
+    PACK_CONFIG_CJS_PATH,
+    PACK_CONFIG_MJS_PATH,
+    PACK_CONFIG_PATH,
+  ].filter((configPath) => FS.existsSync(configPath));
+
+  if (candidates.length === 0) {
     return undefined;
   }
 
-  return FS.readJSONSync(PACK_CONFIG_PATH) as PackConfig;
+  if (candidates.length > 1) {
+    warnPackConfig(
+      `multiple pack config files found (${candidates.map((item) => Path.basename(item)).join(", ")}); using ${Path.basename(candidates[0])}`,
+    );
+  }
+
+  const selectedPath = candidates[0];
+  let loadedConfig: unknown;
+  if (selectedPath.endsWith(".json")) {
+    loadedConfig = FS.readJSONSync(selectedPath);
+  } else {
+    const jiti = createJiti(__filename, { moduleCache: false, interopDefault: true });
+    loadedConfig = jiti(selectedPath);
+  }
+
+  const normalizedConfig =
+    isPlainObject(loadedConfig) && "default" in loadedConfig
+      ? (loadedConfig as { default: unknown }).default
+      : loadedConfig;
+
+  return validatePackConfig(normalizedConfig, selectedPath);
 }
 
 function resolveServerPath(config?: PackConfig): string {
