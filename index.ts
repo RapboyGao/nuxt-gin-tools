@@ -4,8 +4,6 @@
 import buildAndPack from "./commands/pack";
 // 导入开发模式功能
 import develop, { developGo, developNuxt } from "./commands/develop";
-// 导入API生成功能
-import apiGenerate from "./commands/api-generate";
 // 导入安装后处理功能
 import postInstall from "./commands/postinstall";
 // 导入清理功能
@@ -51,10 +49,6 @@ async function main() {
         skipGo: hasFlag(options, "skip-go"),
         skipNuxt: hasFlag(options, "skip-nuxt"),
       });
-      break;
-    case "gen":
-      // 生成API代码（注：此处命令可能拼写错误，应为generate）
-      await apiGenerate();
       break;
     case "install":
       // 执行安装后的初始化操作

@@ -76,13 +76,6 @@ Bootstraps the project:
 - always runs `npx nuxt prepare`
 - if Go is available, also runs `go mod download && go mod tidy`
 
-#### `nuxt-gin gen`
-
-Generates API code from `openapi.yaml`:
-
-- Go Gin server code
-- TypeScript axios client code
-
 #### `nuxt-gin build`
 
 Runs the build-and-pack flow.
@@ -235,7 +228,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - Node.js
 - pnpm
 - Go, if you need the Gin side to run
-- `openapi-generator-cli`, only for `nuxt-gin gen`
+- no extra generator dependency is required for the current command set
 
 ### 📝 Notes
 
@@ -306,13 +299,6 @@ nuxt-gin dev --no-cleanup
 
 - 总是执行 `npx nuxt prepare`
 - 检测到 Go 后，额外执行 `go mod download && go mod tidy`
-
-#### `nuxt-gin gen`
-
-基于 `openapi.yaml` 生成 API 代码：
-
-- Go Gin server 代码
-- TypeScript axios 客户端代码
 
 #### `nuxt-gin build`
 
@@ -466,7 +452,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - Node.js
 - pnpm
 - Go，若需要运行 Gin 侧开发流程
-- `openapi-generator-cli`，仅 `nuxt-gin gen` 需要
+- 当前命令集不再依赖额外的代码生成器
 
 ### 📝 说明
 

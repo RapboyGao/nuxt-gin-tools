@@ -1,4 +1,5 @@
 import concurrently from "concurrently";
+import { printCommandBanner, printCommandSuccess, printCommandWarn } from "../src/terminal-ui";
 
 export type UpdateOptions = {
   latest?: boolean;
@@ -7,6 +8,7 @@ export type UpdateOptions = {
 };
 
 export function update(options: UpdateOptions = {}) {
+  printCommandBanner("update", "Update Node and Go dependencies");
   const commands = [];
 
   if (!options.skipNode) {
@@ -25,10 +27,13 @@ export function update(options: UpdateOptions = {}) {
   }
 
   if (commands.length === 0) {
+    printCommandWarn("No update targets selected, nothing to do");
     return Promise.resolve();
   }
 
-  return concurrently(commands).result;
+  return concurrently(commands).result.then(() => {
+    printCommandSuccess("update", "Dependency update completed");
+  });
 }
 
 export default update;

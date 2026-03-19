@@ -1,7 +1,9 @@
 import concurrently from "concurrently";
 import { spawnSync } from "node:child_process";
+import { printCommandBanner, printCommandSuccess, printCommandWarn } from "../src/terminal-ui";
 
 export function postInstall() {
+  printCommandBanner("install", "Prepare Nuxt and optional Go dependencies");
   const hasGo =
     spawnSync("go", ["version"], { stdio: "ignore", shell: true }).status ===
     0;
@@ -20,13 +22,13 @@ export function postInstall() {
       prefixColor: "green",
     });
   } else {
-    console.warn(
-      "[nuxt-gin-tools] 未检测到 Go，已跳过 Go 相关安装。请先安装 Go 后再重新运行相关命令。"
-    );
+    printCommandWarn("Go was not detected, skipping Go dependency bootstrap");
   }
 
   // 执行并发命令
-  return concurrently(commands).result;
+  return concurrently(commands).result.then(() => {
+    printCommandSuccess("install", "Project bootstrap completed");
+  });
 }
 
 export default postInstall;

@@ -10,6 +10,12 @@ import * as Path from "path";
 import * as os from "os";
 import fg from "fast-glob";
 import type { PackConfig } from "../src/pack";
+import {
+  printCommandBanner,
+  printCommandInfo,
+  printCommandSuccess,
+  printCommandWarn,
+} from "../src/terminal-ui";
 
 const { createJiti } = require("jiti");
 
@@ -66,7 +72,7 @@ type PackConfigIssue = {
 };
 
 function warnPackConfig(message: string) {
-  console.warn(`[nuxt-gin-tools][pack] WARN: ${message}`);
+  printCommandWarn(`[pack] ${message}`);
 }
 
 function errorPackConfig(message: string): never {
@@ -348,6 +354,7 @@ function cleanUp(config?: PackConfig) {
  * 5. 清理原始 dist 目录
  */
 export async function buildAndPack(config?: PackConfig) {
+  printCommandBanner("build", "Build project artifacts and pack deployment bundle");
   const resolvedConfig = config ?? readPackConfigFromCwd();
   const serverPath = resolveServerPath(resolvedConfig);
   const zipPath = resolveZipPath(resolvedConfig);
@@ -360,10 +367,13 @@ export async function buildAndPack(config?: PackConfig) {
     writeScriptFiles(serverPath, resolvedConfig); // 写入脚本文件
   }
   await makeZip(serverPath, zipPath); // 打包文件
+  printCommandInfo("pack", `7z archive: ${zipPath}`);
+  printCommandInfo("pack", `bundle dir: ${serverPath}`);
   if (resolvedConfig?.afterPack) {
     await resolvedConfig.afterPack(zipPath);
   }
   cleanUp(resolvedConfig); // 清理临时文件
+  printCommandSuccess("build", "Build and pack completed");
 }
 
 export default buildAndPack;

@@ -1,7 +1,7 @@
 import * as FS from "fs-extra";
 import * as Path from "path";
 import concurrently from "concurrently";
-import chalk from "chalk";
+import { printCommandBanner, printCommandSuccess } from "../src/terminal-ui";
 
 const cwd = process.cwd();
 
@@ -41,10 +41,11 @@ export function cleanUpBuild() {
  * 清理构建目录和临时文件
  */
 export async function cleanUp() {
+  printCommandBanner("cleanup", "Remove generated build output and temporary files");
   const result = cleanUpNuxt();
   cleanUpBuild();
   await result;
-  console.log(chalk.bgGreen("----- 清理完成！-----"));
+  printCommandSuccess("cleanup", "Temporary files removed");
 }
 
 export default cleanUp;

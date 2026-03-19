@@ -5,6 +5,7 @@ import cleanUp from "./cleanup";
 import postInstall from "./postinstall";
 import { startGoDev } from "./dev-go";
 import { killPorts } from "../src/utils";
+import { printCommandBanner } from "../src/terminal-ui";
 
 const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));
@@ -55,6 +56,7 @@ async function runGoDev() {
  * @returns {Promise<void>} 仅在开发进程退出或出现异常时返回。
  */
 export async function develop(options: DevelopOptions = {}) {
+  printCommandBanner("dev", "Start Nuxt and Go development workflows");
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
   await prepareDevelop(options);
   // 在开发前确保占用端口被释放
@@ -80,6 +82,7 @@ export async function develop(options: DevelopOptions = {}) {
  * @returns {Promise<void>} 仅在开发进程退出或出现异常时返回。
  */
 export async function developNuxt(options: DevelopOptions = {}) {
+  printCommandBanner("dev:nuxt", "Start Nuxt development server only");
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
   await prepareDevelop(options);
   if (killPortBeforeDevelop) {
@@ -94,6 +97,7 @@ export async function developNuxt(options: DevelopOptions = {}) {
  * @returns {Promise<void>} 仅在开发进程退出或出现异常时返回。
  */
 export async function developGo(options: DevelopOptions = {}) {
+  printCommandBanner("dev:go", "Start Go watcher only");
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
   await prepareDevelop(options);
   if (killPortBeforeDevelop) {
