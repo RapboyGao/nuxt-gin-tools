@@ -1,4 +1,5 @@
 import concurrently from "concurrently";
+import { createInterface } from "node:readline/promises";
 import {
   packageManagerUpdateCommand,
   resolvePackageManager,
@@ -22,7 +23,31 @@ export type UpdateOptions = {
   skipNode?: boolean;
 };
 
-export function update(options: UpdateOptions = {}) {
+async function resolveLatestPreference(options: UpdateOptions): Promise<boolean> {
+  if (typeof options.latest === "boolean") {
+    return options.latest;
+  }
+
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    printCommandWarn("Non-interactive terminal detected, defaulting update mode to conservative");
+    return false;
+  }
+
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    const answer = await rl.question("Use latest dependency upgrade strategy? [y/N] ");
+    const normalized = answer.trim().toLowerCase();
+    return ["y", "yes"].includes(normalized);
+  } finally {
+    rl.close();
+  }
+}
+
+export async function update(options: UpdateOptions = {}) {
   printCommandBanner("update", "Update Node and Go dependencies");
   const projectConfig = resolveNuxtGinProjectConfig();
   for (const warning of projectConfig.warnings) {
@@ -30,16 +55,15 @@ export function update(options: UpdateOptions = {}) {
   }
   const resolvedOptions = mergeDefined<UpdateOptions>(
     {
-      latest: false,
       packageManager: "auto",
       ...(projectConfig.config.update ?? {}),
     },
     options,
   );
+  const latest = await resolveLatestPreference(resolvedOptions);
   const actions: string[] = [];
   const commands = [];
   const packageManager = resolvePackageManager(resolvedOptions.packageManager ?? "auto");
-  const latest = resolvedOptions.latest === true;
 
   if (!resolvedOptions.skipNode) {
     actions.push(
@@ -71,13 +95,12 @@ export function update(options: UpdateOptions = {}) {
   if (commands.length === 0) {
     printCommandWarn("No update targets selected, nothing to do");
     printCommandSummary("update", actions.length > 0 ? actions : ["nothing was executed"]);
-    return Promise.resolve();
+    return;
   }
 
-  return concurrently(commands).result.then(() => {
-    printCommandSuccess("update", "Dependency update completed");
-    printCommandSummary("update", actions);
-  });
+  await concurrently(commands).result;
+  printCommandSuccess("update", "Dependency update completed");
+  printCommandSummary("update", actions);
 }
 
 export default update;

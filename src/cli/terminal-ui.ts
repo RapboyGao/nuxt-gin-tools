@@ -2,9 +2,11 @@ import chalk from "chalk";
 
 type PrintMethod = "log" | "warn" | "error";
 
-const TERMINAL_WIDTH = 72;
+const MIN_WIDTH = 60;
+const DEFAULT_WIDTH = 96;
+const INDENT = "  ";
 
-function printLine(message: string, method: PrintMethod = "log") {
+function printLine(message = "", method: PrintMethod = "log") {
   if (method === "warn") {
     console.warn(message);
     return;
@@ -16,8 +18,103 @@ function printLine(message: string, method: PrintMethod = "log") {
   console.log(message);
 }
 
-function repeat(char: string, width = TERMINAL_WIDTH): string {
-  return char.repeat(width);
+function getTerminalWidth(): number {
+  const detected = typeof process.stdout.columns === "number" ? process.stdout.columns : 0;
+  return Math.max(MIN_WIDTH, detected || DEFAULT_WIDTH);
+}
+
+function stripAnsi(value: string): string {
+  return value.replace(/\u001B\[[0-9;]*m/g, "");
+}
+
+function wrapText(value: string, width: number): string[] {
+  const normalized = value.replace(/\r/g, "");
+  const rawLines = normalized.split("\n");
+  const wrapped: string[] = [];
+
+  for (const rawLine of rawLines) {
+    const line = rawLine.trimEnd();
+    if (!line) {
+      wrapped.push("");
+      continue;
+    }
+
+    let current = "";
+    for (const word of line.split(/\s+/)) {
+      if (!word) {
+        continue;
+      }
+
+      if (!current) {
+        if (stripAnsi(word).length <= width) {
+          current = word;
+          continue;
+        }
+
+        let remainder = word;
+        while (stripAnsi(remainder).length > width) {
+          wrapped.push(remainder.slice(0, width));
+          remainder = remainder.slice(width);
+        }
+        current = remainder;
+        continue;
+      }
+
+      const candidate = `${current} ${word}`;
+      if (stripAnsi(candidate).length <= width) {
+        current = candidate;
+        continue;
+      }
+
+      wrapped.push(current);
+      if (stripAnsi(word).length <= width) {
+        current = word;
+        continue;
+      }
+
+      let remainder = word;
+      while (stripAnsi(remainder).length > width) {
+        wrapped.push(remainder.slice(0, width));
+        remainder = remainder.slice(width);
+      }
+      current = remainder;
+    }
+
+    if (current) {
+      wrapped.push(current);
+    }
+  }
+
+  return wrapped;
+}
+
+function printWrapped(
+  prefix: string,
+  message: string,
+  options: { method?: PrintMethod; continuationPrefix?: string } = {},
+) {
+  const method = options.method ?? "log";
+  const width = getTerminalWidth();
+  const visiblePrefix = stripAnsi(prefix).length;
+  const visibleContinuationPrefix = stripAnsi(options.continuationPrefix ?? prefix).length;
+  const firstWidth = Math.max(12, width - visiblePrefix);
+  const continuationWidth = Math.max(12, width - visibleContinuationPrefix);
+  const lines = wrapText(message, firstWidth);
+
+  if (lines.length === 0) {
+    printLine(prefix.trimEnd(), method);
+    return;
+  }
+
+  printLine(`${prefix}${lines[0]}`, method);
+  for (const line of lines.slice(1)) {
+    printLine(`${options.continuationPrefix ?? " ".repeat(visiblePrefix)}${line}`, method);
+  }
+}
+
+function divider(color: (value: string) => string): string {
+  const width = Math.max(20, getTerminalWidth() - 2);
+  return color(`┄`.repeat(width));
 }
 
 function formatClock(): string {
@@ -29,90 +126,79 @@ function formatClock(): string {
   });
 }
 
-function padText(value: string, width: number): string {
-  const text = value.length > width ? `${value.slice(0, Math.max(0, width - 1))}…` : value;
-  return text + " ".repeat(Math.max(0, width - text.length));
-}
-
-function sectionBorder(color: (value: string) => string): string {
-  return color(`╭${repeat("─", TERMINAL_WIDTH - 2)}╮`);
-}
-
-function sectionFooter(color: (value: string) => string): string {
-  return color(`╰${repeat("─", TERMINAL_WIDTH - 2)}╯`);
-}
-
-function sectionBody(text: string, color: (value: string) => string): string {
-  return color(`│ ${padText(text, TERMINAL_WIDTH - 4)} │`);
-}
-
-function printSection(
-  lines: string[],
-  options: { color: (value: string) => string; method?: PrintMethod },
-) {
-  if (lines.length === 0) {
-    return;
-  }
-  const method = options.method ?? "log";
-  printLine(options.color(``), method);
-  printLine(sectionBorder(options.color), method);
-  for (const line of lines) {
-    printLine(sectionBody(line, options.color), method);
-  }
-  printLine(sectionFooter(options.color), method);
-}
-
 function commandChip(command: string): string {
-  return chalk.bgBlueBright.black(` ${command.toUpperCase()} `);
+  return chalk.bold.blueBright(`[${command.toUpperCase()}]`);
 }
 
-function subtleChip(text: string): string {
-  return chalk.bgBlackBright.white(` ${text} `);
+function timeChip(text: string): string {
+  return chalk.gray(`[${text}]`);
+}
+
+function printBlock(
+  title: string,
+  subtitle: string,
+  color: (value: string) => string,
+  method: PrintMethod = "log",
+) {
+  const top = color(`┌ ${title}`);
+  const bodyPrefix = color("│ ");
+  const bottom = color("└");
+
+  printLine("", method);
+  printLine(top, method);
+  printWrapped(bodyPrefix, subtitle, {
+    method,
+    continuationPrefix: color("│ "),
+  });
+  printLine(bottom, method);
 }
 
 export function printCommandBanner(command: string, subtitle: string) {
-  const timestamp = subtleChip(formatClock());
-  const title = `nuxt-gin-tools ${commandChip(command)} ${timestamp}`;
-  const detail = chalk.cyanBright(subtitle);
-
-  printLine("");
-  printSection([title, detail], {
-    color: chalk.blueBright,
-  });
+  const title = `${chalk.bold("nuxt-gin-tools")} ${commandChip(command)} ${timeChip(formatClock())}`;
+  printBlock(title, chalk.cyanBright(subtitle), chalk.blueBright);
 }
 
 export function printCommandSuccess(command: string, message: string) {
-  printLine(chalk.greenBright(`◆ ${chalk.bold(command)} completed`) + chalk.green(`  ${message}`));
+  const prefix = `${chalk.greenBright("◆")} ${chalk.bold.green(command)} `;
+  const continuationPrefix = `${" ".repeat(stripAnsi(prefix).length)}${INDENT}`;
+  printWrapped(prefix, chalk.green(message), {
+    continuationPrefix,
+  });
 }
 
 export function printCommandInfo(label: string, message: string) {
-  const head = chalk.bgCyan.black(` ${label.toUpperCase()} `);
-  printLine(`${head} ${chalk.cyanBright(message)}`);
+  const prefix = `${chalk.bold.cyan(`[${label.toUpperCase()}]`)} `;
+  const continuationPrefix = `${" ".repeat(stripAnsi(prefix).length)}${INDENT}`;
+  printWrapped(prefix, chalk.cyanBright(message), {
+    continuationPrefix,
+  });
 }
 
 export function printCommandWarn(message: string) {
-  printSection([`${chalk.bold("warning")}  ${message}`], {
-    color: chalk.yellow,
-    method: "warn",
-  });
+  printBlock(chalk.bold.yellow("warning"), chalk.yellow(message), chalk.yellow, "warn");
 }
 
 export function printCommandError(message: string, error?: unknown) {
   const detail =
     error instanceof Error ? error.message : error !== undefined ? String(error) : "";
-  const lines = [`${chalk.bold("error")}  ${message}`];
+
+  printBlock(chalk.bold.red("error"), chalk.redBright(message), chalk.red, "error");
   if (detail) {
-    lines.push(chalk.redBright(detail));
+    const prefix = `${chalk.red("│")} `;
+    printWrapped(prefix, chalk.red(detail), {
+      method: "error",
+      continuationPrefix: prefix,
+    });
+    printLine(chalk.red("└"), "error");
   }
-  printSection(lines, {
-    color: chalk.red,
-    method: "error",
-  });
 }
 
 export function printCommandLog(label: string, message: string) {
-  const chip = chalk.bgMagenta.white(` ${label} `);
-  printLine(`${chip} ${chalk.white(message)}`);
+  const prefix = `${chalk.bold.magenta(`[${label}]`)} `;
+  const continuationPrefix = `${" ".repeat(stripAnsi(prefix).length)}${INDENT}`;
+  printWrapped(prefix, chalk.white(message), {
+    continuationPrefix,
+  });
 }
 
 export function printCommandSummary(command: string, items: string[]) {
@@ -121,12 +207,22 @@ export function printCommandSummary(command: string, items: string[]) {
     return;
   }
 
-  const lines = [
-    `${chalk.bold(`${command} summary`)}  ${chalk.gray(`(${normalizedItems.length} items)`)}`,
-    ...normalizedItems.map((item) => chalk.magenta(`• ${item}`)),
-  ];
+  printLine("");
+  printLine(divider(chalk.magentaBright));
+  printWrapped(
+    `${chalk.magentaBright("■")} `,
+    chalk.bold.magenta(`${command} summary`) +
+      chalk.gray(` (${normalizedItems.length} item${normalizedItems.length > 1 ? "s" : ""})`),
+    {
+      continuationPrefix: "  ",
+    },
+  );
 
-  printSection(lines, {
-    color: chalk.magentaBright,
-  });
+  for (const item of normalizedItems) {
+    printWrapped(`${chalk.magenta("•")} `, chalk.white(item), {
+      continuationPrefix: "  ",
+    });
+  }
+
+  printLine(divider(chalk.magentaBright));
 }
