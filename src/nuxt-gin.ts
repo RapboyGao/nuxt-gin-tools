@@ -9,11 +9,23 @@ import type { ServerConfigJson } from "./nuxt-config";
 
 const { createJiti } = require("jiti");
 
+export type GoWatchConfigOptions = {
+  includeExt?: string[];
+  includeDir?: string[];
+  includeFile?: string[];
+  excludeDir?: string[];
+  excludeFile?: string[];
+  excludeRegex?: string[];
+  tmpDir?: string;
+  testDataDir?: string;
+};
+
 export interface NuxtGinConfig {
   dev?: DevelopOptions & {
     cleanupBeforeDevelop?: boolean;
     killPortBeforeDevelop?: boolean;
   };
+  goWatch?: GoWatchConfigOptions;
   install?: PostInstallOptions;
   cleanup?: CleanupOptions;
   update?: Partial<UpdateOptions>;

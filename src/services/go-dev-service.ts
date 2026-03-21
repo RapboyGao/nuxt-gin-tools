@@ -2,7 +2,12 @@ import { spawn, type ChildProcess } from "child_process";
 import chokidar from "chokidar";
 import { existsSync, readFileSync } from "fs-extra";
 import { extname, isAbsolute, join, relative, resolve } from "path";
-import { readLegacyServerConfig } from "../nuxt-gin";
+import {
+  mergeDefined,
+  readLegacyServerConfig,
+  resolveNuxtGinProjectConfig,
+  type GoWatchConfigOptions,
+} from "../nuxt-gin";
 import { killPort } from "../system/ports";
 import { printCommandError, printCommandLog, printCommandWarn } from "../cli/terminal-ui";
 
@@ -63,6 +68,19 @@ const DEFAULT_GO_WATCH_CONFIG = {
   testDataDir: "testdata",
 } as const;
 
+function toDefaultGoWatchOptions(): GoWatchConfigOptions {
+  return {
+    includeExt: [...DEFAULT_GO_WATCH_CONFIG.includeExt],
+    includeDir: [...DEFAULT_GO_WATCH_CONFIG.includeDir],
+    includeFile: [...DEFAULT_GO_WATCH_CONFIG.includeFile],
+    excludeDir: [...DEFAULT_GO_WATCH_CONFIG.excludeDir],
+    excludeFile: [...DEFAULT_GO_WATCH_CONFIG.excludeFile],
+    excludeRegex: [...DEFAULT_GO_WATCH_CONFIG.excludeRegex],
+    tmpDir: DEFAULT_GO_WATCH_CONFIG.tmpDir,
+    testDataDir: DEFAULT_GO_WATCH_CONFIG.testDataDir,
+  };
+}
+
 function getGinPort(): number | null {
   const ginPort = readLegacyServerConfig()?.ginPort;
   if (Number.isInteger(ginPort) && (ginPort as number) > 0) {
@@ -108,15 +126,23 @@ function toStringValue(value: unknown): string {
 }
 
 function loadWatchConfig(): GoWatchConfig {
+  const projectConfig = resolveNuxtGinProjectConfig();
+  for (const warning of projectConfig.warnings) {
+    printCommandWarn(`[config] ${warning}`);
+  }
+  const configuredDefaults = mergeDefined<GoWatchConfigOptions>(
+    toDefaultGoWatchOptions(),
+    projectConfig.config.goWatch,
+  );
   const defaultConfig: GoWatchConfig = {
-    includeExt: new Set(DEFAULT_GO_WATCH_CONFIG.includeExt),
-    includeDir: [...DEFAULT_GO_WATCH_CONFIG.includeDir],
-    includeFile: new Set(DEFAULT_GO_WATCH_CONFIG.includeFile),
-    excludeDir: [...DEFAULT_GO_WATCH_CONFIG.excludeDir],
-    excludeFile: new Set(DEFAULT_GO_WATCH_CONFIG.excludeFile),
-    excludeRegex: DEFAULT_GO_WATCH_CONFIG.excludeRegex.map((item) => new RegExp(item)),
-    tmpDir: DEFAULT_GO_WATCH_CONFIG.tmpDir,
-    testDataDir: DEFAULT_GO_WATCH_CONFIG.testDataDir,
+    includeExt: new Set(configuredDefaults.includeExt ?? []),
+    includeDir: [...(configuredDefaults.includeDir ?? [])],
+    includeFile: new Set(configuredDefaults.includeFile ?? []),
+    excludeDir: [...(configuredDefaults.excludeDir ?? [])],
+    excludeFile: new Set(configuredDefaults.excludeFile ?? []),
+    excludeRegex: (configuredDefaults.excludeRegex ?? []).map((item) => new RegExp(item)),
+    tmpDir: configuredDefaults.tmpDir ?? DEFAULT_GO_WATCH_CONFIG.tmpDir,
+    testDataDir: configuredDefaults.testDataDir ?? DEFAULT_GO_WATCH_CONFIG.testDataDir,
   };
 
   const candidates = [

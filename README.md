@@ -203,6 +203,9 @@ export default createNuxtGinConfig({
   dev: {
     killPortBeforeDevelop: true,
   },
+  goWatch: {
+    includeExt: ['go', 'tpl', 'html'],
+  },
   pack: {
     zipName: 'server.7z',
     extraFilesGlobs: ['prisma/**'],
@@ -229,6 +232,9 @@ export default createNuxtGinConfig({
   dev: {
     killPortBeforeDevelop: true,
   },
+  goWatch: {
+    excludeDir: ['vendor', 'testdata'],
+  },
   pack: {
     serverPath: '.build/production/server',
     zipName: 'release.7z',
@@ -249,6 +255,7 @@ It provides:
 `dev`, `install`, `cleanup`, `update`, and `build` can all read defaults from this file:
 
 - `dev`: development command defaults
+- `goWatch`: built-in Go watcher defaults
 - `install`: bootstrap command defaults
 - `cleanup`: cleanup command defaults
 - `update`: dependency update defaults
@@ -282,7 +289,7 @@ const isDevelopment = config.public.isDevelopment;
 #### `.go-watch.json`
 
 Go watcher defaults are built into `src/services/go-dev-service.ts`.
-If you want to override them per project, create `.go-watch.json` in the project root:
+You can set project-level defaults in `nuxt-gin.config.ts` with `goWatch`, and then optionally override them with `.go-watch.json`:
 
 ```json
 {
@@ -520,6 +527,9 @@ export default createNuxtGinConfig({
   dev: {
     killPortBeforeDevelop: true,
   },
+  goWatch: {
+    includeExt: ['go', 'tpl', 'html'],
+  },
   pack: {
     zipName: 'server.7z',
     extraFilesGlobs: ['prisma/**'],
@@ -546,6 +556,9 @@ export default createNuxtGinConfig({
   dev: {
     killPortBeforeDevelop: true,
   },
+  goWatch: {
+    excludeDir: ['vendor', 'testdata'],
+  },
   pack: {
     serverPath: '.build/production/server',
     zipName: 'release.7z',
@@ -566,6 +579,7 @@ export default createNuxtGinConfig({
 `dev`、`install`、`cleanup`、`update`、`build` 都可以从这个文件读取默认值：
 
 - `dev`：开发命令默认行为
+- `goWatch`：Go watcher 的默认规则
 - `install`：初始化命令默认行为
 - `cleanup`：清理命令默认行为
 - `update`：包管理器与更新策略默认值
@@ -599,7 +613,7 @@ const isDevelopment = config.public.isDevelopment;
 #### `.go-watch.json`
 
 Go watcher 的默认规则已经内置在 `src/services/go-dev-service.ts`。
-如果你想按项目覆盖它们，可以在项目根目录创建 `.go-watch.json`：
+你可以先在 `nuxt-gin.config.ts` 里通过 `goWatch` 设置项目级默认值，再用项目根目录的 `.go-watch.json` 做覆盖：
 
 ```json
 {
