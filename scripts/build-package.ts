@@ -21,7 +21,6 @@ export async function buildPackage() {
   copySync("src/assets/go-gin-server.json", "dist/src/assets/go-gin-server.json");
   copySync("src/assets/server-config.schema.json", "dist/src/assets/server-config.schema.json");
   copySync("src/assets/pack-config.schema.json", "dist/src/assets/pack-config.schema.json");
-  copySync(".go-watch.json", "dist/.go-watch.json");
   await concurrently([
     {
       command: "tsc",

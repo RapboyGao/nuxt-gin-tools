@@ -42,6 +42,27 @@ type GoWatchConfigInput = {
   testdata_dir?: unknown;
 };
 
+const DEFAULT_GO_WATCH_CONFIG = {
+  includeExt: ["go", "tpl", "html"],
+  includeDir: [],
+  includeFile: [],
+  excludeDir: [
+    "assets",
+    ".build/.server",
+    "vendor",
+    "testdata",
+    "node_modules",
+    "vue",
+    "api",
+    ".vscode",
+    ".git",
+  ],
+  excludeFile: [],
+  excludeRegex: ["_test.go"],
+  tmpDir: ".build/.server",
+  testDataDir: "testdata",
+} as const;
+
 function getGinPort(): number | null {
   const ginPort = readLegacyServerConfig()?.ginPort;
   if (Number.isInteger(ginPort) && (ginPort as number) > 0) {
@@ -88,22 +109,19 @@ function toStringValue(value: unknown): string {
 
 function loadWatchConfig(): GoWatchConfig {
   const defaultConfig: GoWatchConfig = {
-    includeExt: new Set(["go"]),
-    includeDir: [],
-    includeFile: new Set(),
-    excludeDir: [".git", "node_modules", "vendor", "vue"],
-    excludeFile: new Set(),
-    excludeRegex: [/_test\.go$/],
-    tmpDir: ".build/.server",
-    testDataDir: "testdata",
+    includeExt: new Set(DEFAULT_GO_WATCH_CONFIG.includeExt),
+    includeDir: [...DEFAULT_GO_WATCH_CONFIG.includeDir],
+    includeFile: new Set(DEFAULT_GO_WATCH_CONFIG.includeFile),
+    excludeDir: [...DEFAULT_GO_WATCH_CONFIG.excludeDir],
+    excludeFile: new Set(DEFAULT_GO_WATCH_CONFIG.excludeFile),
+    excludeRegex: DEFAULT_GO_WATCH_CONFIG.excludeRegex.map((item) => new RegExp(item)),
+    tmpDir: DEFAULT_GO_WATCH_CONFIG.tmpDir,
+    testDataDir: DEFAULT_GO_WATCH_CONFIG.testDataDir,
   };
 
   const candidates = [
     process.env.NUXT_GIN_WATCH_CONFIG,
-    join(cwd, "node_modules/nuxt-gin-tools/.go-watch.json"),
     join(cwd, ".go-watch.json"),
-    join(__dirname, "..", ".go-watch.json"),
-    join(__dirname, "..", "..", ".go-watch.json"),
   ].filter((item): item is string => Boolean(item));
 
   const configPath = candidates.find((item) => existsSync(item));

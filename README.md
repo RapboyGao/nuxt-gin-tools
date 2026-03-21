@@ -281,7 +281,8 @@ const isDevelopment = config.public.isDevelopment;
 
 #### `.go-watch.json`
 
-Go watcher rules come from `.go-watch.json`:
+Go watcher defaults are built into `src/services/go-dev-service.ts`.
+If you want to override them per project, create `.go-watch.json` in the project root:
 
 ```json
 {
@@ -306,7 +307,7 @@ Go watcher rules come from `.go-watch.json`:
 }
 ```
 
-You can also point to a custom watcher config:
+You can also point to a custom watcher config file:
 
 ```bash
 NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
@@ -597,7 +598,8 @@ const isDevelopment = config.public.isDevelopment;
 
 #### `.go-watch.json`
 
-Go 监听规则来自 `.go-watch.json`：
+Go watcher 的默认规则已经内置在 `src/services/go-dev-service.ts`。
+如果你想按项目覆盖它们，可以在项目根目录创建 `.go-watch.json`：
 
 ```json
 {
@@ -622,7 +624,7 @@ Go 监听规则来自 `.go-watch.json`：
 }
 ```
 
-也支持通过环境变量指定：
+也支持通过环境变量指定自定义配置文件：
 
 ```bash
 NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
