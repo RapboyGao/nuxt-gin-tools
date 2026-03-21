@@ -62,6 +62,45 @@ nuxt-gin dev --skip-nuxt
 nuxt-gin dev --no-cleanup
 ```
 
+### 🧱 Source Layout
+
+```text
+src/
+├── assets/
+│   ├── go-gin-server.json
+│   ├── pack-config.schema.json
+│   └── server-config.schema.json
+├── cli/
+│   ├── commands/
+│   │   ├── build.ts
+│   │   ├── cleanup.ts
+│   │   ├── develop.ts
+│   │   ├── install.ts
+│   │   └── update.ts
+│   ├── options.ts
+│   └── terminal-ui.ts
+├── config/
+│   └── package-manager.ts
+├── services/
+│   ├── build-service.ts
+│   ├── go-dev-service.ts
+│   └── pack-service.ts
+├── system/
+│   └── ports.ts
+├── nuxt-config.ts
+├── nuxt-gin.ts
+└── pack.ts
+```
+
+Responsibility split:
+
+- `src/cli`: command entrypoints, option parsing, terminal output
+- `src/config`: CLI configuration helpers
+- `src/services`: build, pack, and Go watcher implementation
+- `src/system`: low-level system helpers such as port cleanup
+- `src/assets`: JSON resources and schemas shipped in the package
+- `src/nuxt-config.ts`, `src/nuxt-gin.ts`, `src/pack.ts`: public helper modules for consumers
+
 ### 🗂️ Commands
 
 #### `nuxt-gin dev`
@@ -338,6 +377,45 @@ nuxt-gin dev --skip-nuxt
 # 跳过预清理 / 预安装检查
 nuxt-gin dev --no-cleanup
 ```
+
+### 🧱 源码结构
+
+```text
+src/
+├── assets/
+│   ├── go-gin-server.json
+│   ├── pack-config.schema.json
+│   └── server-config.schema.json
+├── cli/
+│   ├── commands/
+│   │   ├── build.ts
+│   │   ├── cleanup.ts
+│   │   ├── develop.ts
+│   │   ├── install.ts
+│   │   └── update.ts
+│   ├── options.ts
+│   └── terminal-ui.ts
+├── config/
+│   └── package-manager.ts
+├── services/
+│   ├── build-service.ts
+│   ├── go-dev-service.ts
+│   └── pack-service.ts
+├── system/
+│   └── ports.ts
+├── nuxt-config.ts
+├── nuxt-gin.ts
+└── pack.ts
+```
+
+职责划分：
+
+- `src/cli`：命令入口、参数解析、终端输出
+- `src/config`：CLI 配置解析
+- `src/services`：构建、打包、Go watcher 执行逻辑
+- `src/system`：端口清理等底层系统辅助能力
+- `src/assets`：随 npm 包一起分发的 JSON 资源与 schema
+- `src/nuxt-config.ts`、`src/nuxt-gin.ts`、`src/pack.ts`：给使用方直接 import 的 helper 模块
 
 ### 🗂️ 命令说明
 
