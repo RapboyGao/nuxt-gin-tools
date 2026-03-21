@@ -204,7 +204,9 @@ export default createNuxtGinConfig({
     killPortBeforeDevelop: true,
   },
   goWatch: {
-    includeExt: ['go', 'tpl', 'html'],
+    include: {
+      ext: ['go', 'tpl', 'html'],
+    },
   },
   pack: {
     zipName: 'server.7z',
@@ -233,7 +235,9 @@ export default createNuxtGinConfig({
     killPortBeforeDevelop: true,
   },
   goWatch: {
-    excludeDir: ['vendor', 'testdata'],
+    exclude: {
+      dir: ['vendor', 'testdata'],
+    },
   },
   pack: {
     serverPath: '.build/production/server',
@@ -528,7 +532,9 @@ export default createNuxtGinConfig({
     killPortBeforeDevelop: true,
   },
   goWatch: {
-    includeExt: ['go', 'tpl', 'html'],
+    include: {
+      ext: ['go', 'tpl', 'html'],
+    },
   },
   pack: {
     zipName: 'server.7z',
@@ -557,7 +563,9 @@ export default createNuxtGinConfig({
     killPortBeforeDevelop: true,
   },
   goWatch: {
-    excludeDir: ['vendor', 'testdata'],
+    exclude: {
+      dir: ['vendor', 'testdata'],
+    },
   },
   pack: {
     serverPath: '.build/production/server',

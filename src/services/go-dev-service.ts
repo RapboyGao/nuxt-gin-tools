@@ -28,6 +28,17 @@ type GoWatchConfig = {
   testDataDir: string;
 };
 
+type NormalizedGoWatchOptions = {
+  includeExt: string[];
+  includeDir: string[];
+  includeFile: string[];
+  excludeDir: string[];
+  excludeFile: string[];
+  excludeRegex: string[];
+  tmpDir: string;
+  testDataDir: string;
+};
+
 type GoWatchConfigInput = {
   includeExt?: unknown;
   include_ext?: unknown;
@@ -70,14 +81,36 @@ const DEFAULT_GO_WATCH_CONFIG = {
 
 function toDefaultGoWatchOptions(): GoWatchConfigOptions {
   return {
-    includeExt: [...DEFAULT_GO_WATCH_CONFIG.includeExt],
-    includeDir: [...DEFAULT_GO_WATCH_CONFIG.includeDir],
-    includeFile: [...DEFAULT_GO_WATCH_CONFIG.includeFile],
-    excludeDir: [...DEFAULT_GO_WATCH_CONFIG.excludeDir],
-    excludeFile: [...DEFAULT_GO_WATCH_CONFIG.excludeFile],
-    excludeRegex: [...DEFAULT_GO_WATCH_CONFIG.excludeRegex],
+    include: {
+      ext: [...DEFAULT_GO_WATCH_CONFIG.includeExt],
+      dir: [...DEFAULT_GO_WATCH_CONFIG.includeDir],
+      file: [...DEFAULT_GO_WATCH_CONFIG.includeFile],
+    },
+    exclude: {
+      dir: [...DEFAULT_GO_WATCH_CONFIG.excludeDir],
+      file: [...DEFAULT_GO_WATCH_CONFIG.excludeFile],
+      regex: [...DEFAULT_GO_WATCH_CONFIG.excludeRegex],
+    },
     tmpDir: DEFAULT_GO_WATCH_CONFIG.tmpDir,
     testDataDir: DEFAULT_GO_WATCH_CONFIG.testDataDir,
+  };
+}
+
+function normalizeConfiguredGoWatchOptions(
+  config?: GoWatchConfigOptions,
+): NormalizedGoWatchOptions {
+  const include = config?.include;
+  const exclude = config?.exclude;
+
+  return {
+    includeExt: include?.ext ?? config?.includeExt ?? [],
+    includeDir: include?.dir ?? config?.includeDir ?? [],
+    includeFile: include?.file ?? config?.includeFile ?? [],
+    excludeDir: exclude?.dir ?? config?.excludeDir ?? [],
+    excludeFile: exclude?.file ?? config?.excludeFile ?? [],
+    excludeRegex: exclude?.regex ?? config?.excludeRegex ?? [],
+    tmpDir: config?.tmpDir ?? DEFAULT_GO_WATCH_CONFIG.tmpDir,
+    testDataDir: config?.testDataDir ?? DEFAULT_GO_WATCH_CONFIG.testDataDir,
   };
 }
 
@@ -134,15 +167,16 @@ function loadWatchConfig(): GoWatchConfig {
     toDefaultGoWatchOptions(),
     projectConfig.config.goWatch,
   );
+  const normalizedDefaults = normalizeConfiguredGoWatchOptions(configuredDefaults);
   const defaultConfig: GoWatchConfig = {
-    includeExt: new Set(configuredDefaults.includeExt ?? []),
-    includeDir: [...(configuredDefaults.includeDir ?? [])],
-    includeFile: new Set(configuredDefaults.includeFile ?? []),
-    excludeDir: [...(configuredDefaults.excludeDir ?? [])],
-    excludeFile: new Set(configuredDefaults.excludeFile ?? []),
-    excludeRegex: (configuredDefaults.excludeRegex ?? []).map((item) => new RegExp(item)),
-    tmpDir: configuredDefaults.tmpDir ?? DEFAULT_GO_WATCH_CONFIG.tmpDir,
-    testDataDir: configuredDefaults.testDataDir ?? DEFAULT_GO_WATCH_CONFIG.testDataDir,
+    includeExt: new Set(normalizedDefaults.includeExt),
+    includeDir: [...normalizedDefaults.includeDir],
+    includeFile: new Set(normalizedDefaults.includeFile),
+    excludeDir: [...normalizedDefaults.excludeDir],
+    excludeFile: new Set(normalizedDefaults.excludeFile),
+    excludeRegex: normalizedDefaults.excludeRegex.map((item) => new RegExp(item)),
+    tmpDir: normalizedDefaults.tmpDir,
+    testDataDir: normalizedDefaults.testDataDir,
   };
 
   const candidates = [
