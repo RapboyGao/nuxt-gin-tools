@@ -21,7 +21,7 @@ Quick Jump:
 - 🚀 One command to run Nuxt dev + Go watcher together
 - 🔁 Automatic Go restart on file changes with `chokidar`
 - 📦 Build-and-pack workflow for deployment artifacts
-- 🧩 `pack.config.ts` support with typed config helper
+- 🧩 `nuxt-gin.config.ts` support with typed config helper
 - 🛡️ Config validation with `warn` and `error` feedback
 - 🔧 Useful CLI switches for partial workflows like `--skip-go`
 - 🎨 Colorful command banners and clearer terminal feedback
@@ -143,40 +143,37 @@ nuxt-gin update --package-manager pnpm --latest false
 
 Also prints a styled command banner before execution.
 
-### 🧩 `pack.config.ts` / `pack.config.json`
+### 🧩 `nuxt-gin.config.ts`
 
-`nuxt-gin build` can auto-load pack config from the project root with this priority:
+`nuxt-gin` commands can auto-load project config from the root with this priority:
 
-1. `pack.config.ts`
-2. `pack.config.js`
-3. `pack.config.cjs`
-4. `pack.config.mjs`
-5. `pack.config.json`
+1. `nuxt-gin.config.ts`
+2. `nuxt-gin.config.js`
+3. `nuxt-gin.config.cjs`
+4. `nuxt-gin.config.mjs`
+5. `nuxt-gin.config.json`
 
 If multiple config files exist, the CLI prints a `warn` and uses the first one by priority.
 
 Recommended TypeScript form:
 
 ```ts
-import createPackConfig from 'nuxt-gin-tools/src/pack';
+import createNuxtGinConfig from 'nuxt-gin-tools/src/nuxt-gin';
 
-export default createPackConfig({
-  zipName: 'server.7z',
-  extraFilesGlobs: ['prisma/**'],
-  packageJson: {
-    private: true,
+export default createNuxtGinConfig({
+  serverConfig: {
+    baseUrl: '/web',
+    nuxtPort: 3000,
+    ginPort: 8099,
+  },
+  pack: {
+    zipName: 'server.7z',
+    extraFilesGlobs: ['prisma/**'],
   },
 });
 ```
 
-Legacy JSON is still supported:
-
-```json
-{
-  "zipName": "server.7z",
-  "extraFilesGlobs": ["prisma/**"]
-}
-```
+Legacy `pack.config.*` is still supported as a fallback for `build`, but `nuxt-gin.config.*` is now the primary entry.
 
 Validation behavior:
 
@@ -184,36 +181,56 @@ Validation behavior:
 - ⚠️ ambiguous but survivable cases produce a `warn`
 - 📝 example: if both `zipPath` and `zipName` are present, `zipPath` wins and a warning is shown
 
-### 🧱 `pack.config.ts` Helper
+### 🧱 `nuxt-gin.config.ts` Helper
 
-Use the helper from [`src/pack.ts`](./src/pack.ts):
+Use the helper from [`src/nuxt-gin.ts`](./src/nuxt-gin.ts):
 
 ```ts
-import createPackConfig from 'nuxt-gin-tools/src/pack';
+import createNuxtGinConfig from 'nuxt-gin-tools/src/nuxt-gin';
 
-export default createPackConfig({
-  serverPath: '.build/production/server',
-  zipName: 'release.7z',
+export default createNuxtGinConfig({
+  serverConfig: {
+    baseUrl: '/web',
+    nuxtPort: 3000,
+    ginPort: 8099,
+  },
+  pack: {
+    serverPath: '.build/production/server',
+    zipName: 'release.7z',
+  },
 });
 ```
 
 It provides:
 
-- `PackConfig` type
-- `createPackConfig(config)` helper
-- default export as `createPackConfig`
+- `NuxtGinConfig` type
+- `createNuxtGinConfig(config)` helper
+- default export as `createNuxtGinConfig`
 
 ### ⚙️ Runtime Config
 
+#### `nuxt-gin.config.ts`
+
+`dev`, `install`, `cleanup`, `update`, and `build` can all read defaults from this file:
+
+- `serverConfig`: shared Nuxt/Gin runtime ports and base URL
+- `dev`: development command defaults
+- `install`: bootstrap command defaults
+- `cleanup`: cleanup command defaults
+- `update`: dependency update defaults
+- `pack`: build-and-pack defaults
+
 #### `server.config.json`
 
-`dev` reads this file for the main runtime wiring:
+`server.config.json` is still kept for Go runtime and packaged output:
 
 - `ginPort`: Gin server port
 - `nuxtPort`: Nuxt dev port
 - `baseUrl`: Nuxt base URL
 - `killPortBeforeDevelop`: whether to free ports before dev, default `true`
 - `cleanupBeforeDevelop`: whether to cleanup before dev, default `false`
+
+If it is missing, `nuxt-gin build` can generate it from `nuxt-gin.config.ts`.
 
 #### Frontend Runtime Exposure
 
@@ -288,7 +305,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 🚀 一条命令同时启动 Nuxt 与 Go 开发环境
 - 🔁 基于 `chokidar` 的 Go 文件监听与自动重启
 - 📦 内置构建与打包流程，适合产物发布
-- 🧩 支持 `pack.config.ts`，并提供类型化 helper
+- 🧩 支持 `nuxt-gin.config.ts`，并提供类型化 helper
 - 🛡️ 对打包配置做校验，区分 `warn` 和 `error`
 - 🔧 支持 `--skip-go` 等局部开发参数
 - 🎨 提供更醒目的彩色命令行 banner 与输出提示
@@ -410,40 +427,37 @@ nuxt-gin update --package-manager pnpm --latest false
 
 执行前也会输出一段样式化 banner。
 
-### 🧩 `pack.config.ts` / `pack.config.json`
+### 🧩 `nuxt-gin.config.ts`
 
-`nuxt-gin build` 会自动读取项目根目录中的打包配置，优先级如下：
+`nuxt-gin` 会自动读取项目根目录中的统一配置，优先级如下：
 
-1. `pack.config.ts`
-2. `pack.config.js`
-3. `pack.config.cjs`
-4. `pack.config.mjs`
-5. `pack.config.json`
+1. `nuxt-gin.config.ts`
+2. `nuxt-gin.config.js`
+3. `nuxt-gin.config.cjs`
+4. `nuxt-gin.config.mjs`
+5. `nuxt-gin.config.json`
 
 如果同时存在多个配置文件，CLI 会输出 `warn`，并按优先级选择第一个。
 
 推荐使用 TypeScript 写法：
 
 ```ts
-import createPackConfig from 'nuxt-gin-tools/src/pack';
+import createNuxtGinConfig from 'nuxt-gin-tools/src/nuxt-gin';
 
-export default createPackConfig({
-  zipName: 'server.7z',
-  extraFilesGlobs: ['prisma/**'],
-  packageJson: {
-    private: true,
+export default createNuxtGinConfig({
+  serverConfig: {
+    baseUrl: '/web',
+    nuxtPort: 3000,
+    ginPort: 8099,
+  },
+  pack: {
+    zipName: 'server.7z',
+    extraFilesGlobs: ['prisma/**'],
   },
 });
 ```
 
-旧的 JSON 配置仍然兼容：
-
-```json
-{
-  "zipName": "server.7z",
-  "extraFilesGlobs": ["prisma/**"]
-}
-```
+旧的 `pack.config.*` 仍可作为 `build` 的兼容兜底，但 `nuxt-gin.config.*` 已经成为主入口。
 
 校验规则：
 
@@ -451,36 +465,56 @@ export default createPackConfig({
 - ⚠️ 可继续执行但存在歧义的情况会输出 `warn`
 - 📝 例如同时设置 `zipPath` 和 `zipName` 时，会提示 `zipPath` 优先生效
 
-### 🧱 `pack.config.ts` Helper
+### 🧱 `nuxt-gin.config.ts` Helper
 
-可通过 [`src/pack.ts`](./src/pack.ts) 使用 helper：
+可通过 [`src/nuxt-gin.ts`](./src/nuxt-gin.ts) 使用 helper：
 
 ```ts
-import createPackConfig from 'nuxt-gin-tools/src/pack';
+import createNuxtGinConfig from 'nuxt-gin-tools/src/nuxt-gin';
 
-export default createPackConfig({
-  serverPath: '.build/production/server',
-  zipName: 'release.7z',
+export default createNuxtGinConfig({
+  serverConfig: {
+    baseUrl: '/web',
+    nuxtPort: 3000,
+    ginPort: 8099,
+  },
+  pack: {
+    serverPath: '.build/production/server',
+    zipName: 'release.7z',
+  },
 });
 ```
 
 它提供：
 
-- `PackConfig` 类型
-- `createPackConfig(config)` 函数
-- 默认导出即 `createPackConfig`
+- `NuxtGinConfig` 类型
+- `createNuxtGinConfig(config)` 函数
+- 默认导出即 `createNuxtGinConfig`
 
 ### ⚙️ 运行时配置
 
+#### `nuxt-gin.config.ts`
+
+`dev`、`install`、`cleanup`、`update`、`build` 都可以从这个文件读取默认值：
+
+- `serverConfig`：Nuxt/Gin 共享端口与基础路径
+- `dev`：开发命令默认行为
+- `install`：初始化命令默认行为
+- `cleanup`：清理命令默认行为
+- `update`：包管理器与更新策略默认值
+- `pack`：打包默认值
+
 #### `server.config.json`
 
-`dev` 命令会读取这个文件来确定运行方式：
+`server.config.json` 仍然保留，用于 Go 运行时与打包产物：
 
 - `ginPort`：Gin 服务端口
 - `nuxtPort`：Nuxt 开发端口
 - `baseUrl`：Nuxt 的 base URL
 - `killPortBeforeDevelop`：开发前是否释放端口，默认 `true`
 - `cleanupBeforeDevelop`：开发前是否执行 cleanup，默认 `false`
+
+如果这个文件缺失，`nuxt-gin build` 会尝试从 `nuxt-gin.config.ts` 生成它。
 
 #### 前端运行时暴露
 

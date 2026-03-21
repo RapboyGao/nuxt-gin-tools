@@ -10,7 +10,12 @@ import postInstall from "./commands/postinstall";
 import cleanUp from "./commands/cleanup";
 // 导入更新功能
 import update from "./commands/update";
-import { getBooleanOption, getOption, hasFlag, parseCLIOptions } from "./src/cli-options";
+import {
+  getOption,
+  getOptionalBooleanOption,
+  hasFlag,
+  parseCLIOptions,
+} from "./src/cli-options";
 import {
   isPackageManagerSelection,
   type PackageManagerSelection,
@@ -81,7 +86,7 @@ async function main() {
     case "update":
       // 更新依赖
       await update({
-        latest: getBooleanOption(options, "latest", false),
+        latest: getOptionalBooleanOption(options, "latest"),
         packageManager: packageManagerOption,
         skipGo: hasFlag(options, "skip-go"),
         skipNode: hasFlag(options, "skip-node"),

@@ -1,5 +1,6 @@
 import concurrently from "concurrently";
 import { spawnSync } from "node:child_process";
+import { mergeDefined, resolveNuxtGinProjectConfig } from "../src/nuxt-gin";
 import {
   printCommandBanner,
   printCommandSuccess,
@@ -14,12 +15,20 @@ export type PostInstallOptions = {
 
 export function postInstall(options: PostInstallOptions = {}) {
   printCommandBanner("install", "Prepare Nuxt and optional Go dependencies");
+  const projectConfig = resolveNuxtGinProjectConfig();
+  for (const warning of projectConfig.warnings) {
+    printCommandWarn(`[config] ${warning}`);
+  }
+  const resolvedOptions = mergeDefined<PostInstallOptions>(
+    projectConfig.config.install,
+    options,
+  );
   const actions: string[] = [];
   const commands = [];
   const hasGo =
     spawnSync("go", ["version"], { stdio: "ignore", shell: true }).status ===
     0;
-  if (!options.skipNuxt) {
+  if (!resolvedOptions.skipNuxt) {
     actions.push("prepared Nuxt runtime");
     commands.push({
       command: "npx nuxt prepare",
@@ -28,20 +37,20 @@ export function postInstall(options: PostInstallOptions = {}) {
     });
   }
 
-  if (!options.skipGo && hasGo) {
+  if (!resolvedOptions.skipGo && hasGo) {
     actions.push("downloaded and tidied Go modules");
     commands.push({
       command: "go mod download && go mod tidy",
       name: "go",
       prefixColor: "green",
     });
-  } else if (!options.skipGo) {
+  } else if (!resolvedOptions.skipGo) {
     printCommandWarn("Go was not detected, skipping Go dependency bootstrap");
     actions.push("skipped Go bootstrap because Go was not detected");
   } else {
     actions.push("skipped Go bootstrap by option");
   }
-  if (options.skipNuxt) {
+  if (resolvedOptions.skipNuxt) {
     actions.push("skipped Nuxt prepare by option");
   }
   if (commands.length === 0) {

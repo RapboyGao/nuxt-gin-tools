@@ -5,6 +5,10 @@ import {
   type PackageManagerSelection,
 } from "../src/package-manager";
 import {
+  mergeDefined,
+  resolveNuxtGinProjectConfig,
+} from "../src/nuxt-gin";
+import {
   printCommandBanner,
   printCommandSuccess,
   printCommandSummary,
@@ -12,42 +16,55 @@ import {
 } from "../src/terminal-ui";
 
 export type UpdateOptions = {
-  latest: boolean;
-  packageManager: PackageManagerSelection;
+  latest?: boolean;
+  packageManager?: PackageManagerSelection;
   skipGo?: boolean;
   skipNode?: boolean;
 };
 
-export function update(options: UpdateOptions) {
+export function update(options: UpdateOptions = {}) {
   printCommandBanner("update", "Update Node and Go dependencies");
+  const projectConfig = resolveNuxtGinProjectConfig();
+  for (const warning of projectConfig.warnings) {
+    printCommandWarn(`[config] ${warning}`);
+  }
+  const resolvedOptions = mergeDefined<UpdateOptions>(
+    {
+      latest: false,
+      packageManager: "auto",
+      ...(projectConfig.config.update ?? {}),
+    },
+    options,
+  );
   const actions: string[] = [];
   const commands = [];
-  const packageManager = resolvePackageManager(options.packageManager);
+  const packageManager = resolvePackageManager(resolvedOptions.packageManager ?? "auto");
+  const latest = resolvedOptions.latest === true;
 
-  if (!options.skipNode) {
+  if (!resolvedOptions.skipNode) {
     actions.push(
-      `updated Node dependencies with ${packageManager} (${options.latest ? "latest" : "conservative"} mode)`,
+      `updated Node dependencies with ${packageManager} (${latest ? "latest" : "conservative"} mode)`,
     );
     commands.push({
-      command: packageManagerUpdateCommand(packageManager, options.latest),
+      command: packageManagerUpdateCommand(packageManager, latest),
       name: packageManager,
       prefixColor: "magenta" as const,
     });
   }
-  if (!options.skipGo) {
+  if (!resolvedOptions.skipGo) {
     actions.push(
-      `updated Go modules with ${options.latest ? "latest" : "patch"} strategy`,
+      `updated Go modules with ${latest ? "latest" : "patch"} strategy`,
     );
     commands.push({
-      command: options.latest ? "go get -u ./... && go mod tidy" : "go get -u=patch ./... && go mod tidy",
+      command: latest ? "go get -u ./... && go mod tidy" : "go get -u=patch ./... && go mod tidy",
       name: "go",
       prefixColor: "green" as const,
     });
   }
-  if (options.skipNode) {
+  if (resolvedOptions.skipNode) {
     actions.push("skipped Node dependency update");
   }
-  if (options.skipGo) {
+  if (resolvedOptions.skipGo) {
     actions.push("skipped Go dependency update");
   }
 

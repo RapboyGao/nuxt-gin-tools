@@ -53,9 +53,20 @@ export function getBooleanOption(
   key: string,
   defaultValue: boolean,
 ): boolean {
-  const value = getOption(options, key);
+  const value = getOptionalBooleanOption(options, key);
   if (value === undefined) {
     return defaultValue;
+  }
+  return value;
+}
+
+export function getOptionalBooleanOption(
+  options: CLIOptions,
+  key: string,
+): boolean | undefined {
+  const value = getOption(options, key);
+  if (value === undefined) {
+    return undefined;
   }
   const normalized = value.trim().toLowerCase();
   if (["true", "1", "yes", "y", "on"].includes(normalized)) {

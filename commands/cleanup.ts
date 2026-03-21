@@ -1,11 +1,13 @@
 import * as FS from "fs-extra";
 import * as Path from "path";
 import concurrently from "concurrently";
+import { mergeDefined, resolveNuxtGinProjectConfig } from "../src/nuxt-gin";
 import {
   printCommandBanner,
   printCommandInfo,
   printCommandSuccess,
   printCommandSummary,
+  printCommandWarn,
 } from "../src/terminal-ui";
 
 const cwd = process.cwd();
@@ -64,13 +66,21 @@ export function cleanUpBuild(options: CleanupOptions = {}, actions: string[] = [
  */
 export async function cleanUp(options: CleanupOptions = {}) {
   printCommandBanner("cleanup", "Remove generated build output and temporary files");
+  const projectConfig = resolveNuxtGinProjectConfig();
+  for (const warning of projectConfig.warnings) {
+    printCommandWarn(`[config] ${warning}`);
+  }
+  const resolvedOptions = mergeDefined<CleanupOptions>(
+    projectConfig.config.cleanup,
+    options,
+  );
   const actions: string[] = [];
-  const result = cleanUpNuxt(options, actions);
-  cleanUpBuild(options, actions);
+  const result = cleanUpNuxt(resolvedOptions, actions);
+  cleanUpBuild(resolvedOptions, actions);
   await result;
   printCommandSuccess(
     "cleanup",
-    options.dryRun ? "Dry run completed" : "Temporary files removed",
+    resolvedOptions.dryRun ? "Dry run completed" : "Temporary files removed",
   );
   printCommandSummary("cleanup", actions);
 }

@@ -1,7 +1,8 @@
 import { spawn, type ChildProcess } from "child_process";
 import chokidar from "chokidar";
-import { existsSync, readFileSync, readJSONSync } from "fs-extra";
+import { existsSync, readFileSync } from "fs-extra";
 import { extname, isAbsolute, join, relative, resolve } from "path";
+import { resolveNuxtGinProjectConfig } from "../src/nuxt-gin";
 import { killPort } from "../src/utils";
 import { printCommandError, printCommandLog, printCommandWarn } from "../src/terminal-ui";
 
@@ -10,8 +11,6 @@ const RESTART_DEBOUNCE_MS = 150;
 const SHUTDOWN_TIMEOUT_MS = 2000;
 const LOG_TAG = "go-watch";
 const GO_WATCH_PREFIX = `[${LOG_TAG}]`;
-const serverConfigPath = join(cwd, "server.config.json");
-const ginPort = getGinPort();
 
 type GoWatchConfig = {
   includeExt: Set<string>;
@@ -43,26 +42,22 @@ type GoWatchConfigInput = {
   testdata_dir?: unknown;
 };
 
-type ServerConfig = {
-  ginPort?: number;
-};
-
 function getGinPort(): number | null {
-  if (!existsSync(serverConfigPath)) {
-    return null;
+  const projectConfig = resolveNuxtGinProjectConfig();
+  for (const warning of projectConfig.warnings) {
+    printCommandWarn(`[config] ${warning}`);
   }
-  try {
-    const serverConfig = readJSONSync(serverConfigPath) as ServerConfig;
-    if (Number.isInteger(serverConfig.ginPort) && (serverConfig.ginPort as number) > 0) {
-      return serverConfig.ginPort as number;
-    }
-  } catch {
-    // best effort
+  const ginPort = projectConfig.config.serverConfig?.ginPort;
+  if (Number.isInteger(ginPort) && (ginPort as number) > 0) {
+    return ginPort as number;
+  }
+  if (!existsSync(join(cwd, "server.config.json"))) {
+    return null;
   }
   return null;
 }
 
-function killGinPortIfNeeded() {
+function killGinPortIfNeeded(ginPort: number | null) {
   if (!ginPort) {
     return;
   }
@@ -231,9 +226,9 @@ function quote(arg: string): string {
   return arg;
 }
 
-function runGoProcess(): ChildProcess {
+function runGoProcess(ginPort: number | null): ChildProcess {
   const command = `go run ${quote("main.go")}`;
-  killGinPortIfNeeded();
+  killGinPortIfNeeded(ginPort);
   printCommandLog(GO_WATCH_PREFIX, `start: ${command}`);
   return spawn(command, {
     cwd,
@@ -287,8 +282,9 @@ async function stopGoProcess(proc: ChildProcess | null): Promise<void> {
  *
  * @returns {Promise<void>} 仅在监听流程被中断并完成清理后返回。
  */
-export async function startGoDev() {
+export async function startGoDev(ginPortOverride?: number | null) {
   const watchConfig = loadWatchConfig();
+  const ginPort = ginPortOverride ?? getGinPort();
   const watchRoots = watchConfig.includeDir.length
     ? watchConfig.includeDir.map((dir) => join(cwd, dir))
     : [cwd];
@@ -299,7 +295,7 @@ export async function startGoDev() {
   );
 
   let restarting = false;
-  let goProc: ChildProcess | null = runGoProcess();
+  let goProc: ChildProcess | null = runGoProcess(ginPort);
   let restartTimer: NodeJS.Timeout | null = null;
 
   const watcher = chokidar.watch(watchRoots, {
@@ -328,7 +324,7 @@ export async function startGoDev() {
       restarting = true;
       printCommandLog(GO_WATCH_PREFIX, `${eventName}: ${relPath}, restarting...`);
       await stopGoProcess(goProc);
-      goProc = runGoProcess();
+      goProc = runGoProcess(ginPort);
       restarting = false;
     }, RESTART_DEBOUNCE_MS);
   };

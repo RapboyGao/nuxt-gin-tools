@@ -1,14 +1,22 @@
 import concurrently from "concurrently";
-import { existsSync, readJSONSync, ensureDirSync } from "fs-extra";
+import { ensureDirSync, existsSync } from "fs-extra";
 import { join } from "path";
 import cleanUp from "./cleanup";
 import postInstall from "./postinstall";
 import { startGoDev } from "./dev-go";
+import {
+  mergeDefined,
+  resolveNuxtGinProjectConfig,
+  type NuxtGinServerConfig,
+} from "../src/nuxt-gin";
 import { killPorts } from "../src/utils";
-import { printCommandBanner, printCommandSummary } from "../src/terminal-ui";
+import {
+  printCommandBanner,
+  printCommandSummary,
+  printCommandWarn,
+} from "../src/terminal-ui";
 
 const cwd = process.cwd();
-const serverConfig = readJSONSync(join(cwd, "server.config.json"));
 
 export type DevelopOptions = {
   noCleanup?: boolean;
@@ -16,24 +24,66 @@ export type DevelopOptions = {
   skipNuxt?: boolean;
 };
 
-async function prepareDevelop(options: DevelopOptions = {}) {
-  const cleanupBeforeDevelop = serverConfig.cleanupBeforeDevelop === true;
-  const shouldPrepare = !options.noCleanup;
+type DevelopContext = {
+  options: DevelopOptions;
+  serverConfig: NuxtGinServerConfig;
+  cleanupBeforeDevelop: boolean;
+  killPortBeforeDevelop: boolean;
+};
+
+function resolveDevelopContext(options: DevelopOptions = {}): DevelopContext {
+  const projectConfig = resolveNuxtGinProjectConfig();
+  for (const warning of projectConfig.warnings) {
+    printCommandWarn(`[config] ${warning}`);
+  }
+  if (!projectConfig.config.serverConfig) {
+    throw new Error(
+      "serverConfig is required. Define it in nuxt-gin.config.ts or keep server.config.json in project root.",
+    );
+  }
+
+  const resolvedOptions = mergeDefined<DevelopOptions>(
+    projectConfig.config.dev,
+    options,
+  );
+  const cleanupBeforeDevelop =
+    projectConfig.config.dev?.cleanupBeforeDevelop ??
+    (projectConfig.config.serverConfig.cleanupBeforeDevelop === true);
+  const killPortBeforeDevelop =
+    projectConfig.config.dev?.killPortBeforeDevelop ??
+    (projectConfig.config.serverConfig.killPortBeforeDevelop !== false);
+
+  return {
+    options: resolvedOptions,
+    serverConfig: projectConfig.config.serverConfig,
+    cleanupBeforeDevelop,
+    killPortBeforeDevelop,
+  };
+}
+
+async function prepareDevelop(context: DevelopContext) {
+  const shouldPrepare = !context.options.noCleanup;
   if (!shouldPrepare) {
     return;
   }
-  if (cleanupBeforeDevelop) {
+  if (context.cleanupBeforeDevelop) {
     await cleanUp();
-    await postInstall();
+    await postInstall({
+      skipGo: context.options.skipGo,
+      skipNuxt: context.options.skipNuxt,
+    });
     return;
   }
   if (!existsSync(join(cwd, "vue/.nuxt")) || !existsSync(join(cwd, "go.sum"))) {
     await cleanUp();
-    await postInstall();
+    await postInstall({
+      skipGo: context.options.skipGo,
+      skipNuxt: context.options.skipNuxt,
+    });
   }
 }
 
-async function runNuxtDev() {
+async function runNuxtDev(serverConfig: NuxtGinServerConfig) {
   await concurrently([
     {
       command: `npx nuxt dev --port=${serverConfig.nuxtPort} --host`,
@@ -43,9 +93,9 @@ async function runNuxtDev() {
   ]).result;
 }
 
-async function runGoDev() {
+async function runGoDev(serverConfig: NuxtGinServerConfig) {
   ensureDirSync(join(cwd, ".build/.server"));
-  await startGoDev();
+  await startGoDev(serverConfig.ginPort);
 }
 
 /**
@@ -57,30 +107,30 @@ async function runGoDev() {
  */
 export async function develop(options: DevelopOptions = {}) {
   printCommandBanner("dev", "Start Nuxt and Go development workflows");
+  const context = resolveDevelopContext(options);
   const actions: string[] = [];
-  const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
-  await prepareDevelop(options);
+  await prepareDevelop(context);
   // 在开发前确保占用端口被释放
-  if (killPortBeforeDevelop) {
+  if (context.killPortBeforeDevelop) {
     killPorts([
-      options.skipGo ? undefined : serverConfig.ginPort,
-      options.skipNuxt ? undefined : serverConfig.nuxtPort,
+      context.options.skipGo ? undefined : context.serverConfig.ginPort,
+      context.options.skipNuxt ? undefined : context.serverConfig.nuxtPort,
     ]);
     actions.push("released occupied development ports");
   }
   const tasks: Array<Promise<void>> = [];
-  if (!options.skipGo) {
-    tasks.push(runGoDev());
-    actions.push(`started Go watcher on port ${serverConfig.ginPort}`);
+  if (!context.options.skipGo) {
+    tasks.push(runGoDev(context.serverConfig));
+    actions.push(`started Go watcher on port ${context.serverConfig.ginPort}`);
   }
-  if (!options.skipNuxt) {
-    tasks.push(runNuxtDev());
-    actions.push(`started Nuxt dev server on port ${serverConfig.nuxtPort}`);
+  if (!context.options.skipNuxt) {
+    tasks.push(runNuxtDev(context.serverConfig));
+    actions.push(`started Nuxt dev server on port ${context.serverConfig.nuxtPort}`);
   }
-  if (options.skipGo) {
+  if (context.options.skipGo) {
     actions.push("skipped Go workflow");
   }
-  if (options.skipNuxt) {
+  if (context.options.skipNuxt) {
     actions.push("skipped Nuxt workflow");
   }
   printCommandSummary("dev", actions);
@@ -94,16 +144,22 @@ export async function develop(options: DevelopOptions = {}) {
  */
 export async function developNuxt(options: DevelopOptions = {}) {
   printCommandBanner("dev:nuxt", "Start Nuxt development server only");
+  const context = resolveDevelopContext(options);
   const actions: string[] = [];
-  const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
-  await prepareDevelop(options);
-  if (killPortBeforeDevelop) {
-    killPorts([serverConfig.nuxtPort]);
+  await prepareDevelop({
+    ...context,
+    options: {
+      ...context.options,
+      skipGo: true,
+    },
+  });
+  if (context.killPortBeforeDevelop) {
+    killPorts([context.serverConfig.nuxtPort]);
     actions.push("released Nuxt dev port");
   }
-  actions.push(`started Nuxt dev server on port ${serverConfig.nuxtPort}`);
+  actions.push(`started Nuxt dev server on port ${context.serverConfig.nuxtPort}`);
   printCommandSummary("dev:nuxt", actions);
-  await runNuxtDev();
+  await runNuxtDev(context.serverConfig);
 }
 
 /**
@@ -113,16 +169,22 @@ export async function developNuxt(options: DevelopOptions = {}) {
  */
 export async function developGo(options: DevelopOptions = {}) {
   printCommandBanner("dev:go", "Start Go watcher only");
+  const context = resolveDevelopContext(options);
   const actions: string[] = [];
-  const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
-  await prepareDevelop(options);
-  if (killPortBeforeDevelop) {
-    killPorts([serverConfig.ginPort]);
+  await prepareDevelop({
+    ...context,
+    options: {
+      ...context.options,
+      skipNuxt: true,
+    },
+  });
+  if (context.killPortBeforeDevelop) {
+    killPorts([context.serverConfig.ginPort]);
     actions.push("released Go server port");
   }
-  actions.push(`started Go watcher on port ${serverConfig.ginPort}`);
+  actions.push(`started Go watcher on port ${context.serverConfig.ginPort}`);
   printCommandSummary("dev:go", actions);
-  await runGoDev();
+  await runGoDev(context.serverConfig);
 }
 
 export default develop;

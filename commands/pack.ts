@@ -9,6 +9,11 @@ import * as Path from "path";
 
 import * as os from "os";
 import fg from "fast-glob";
+import {
+  mergeDefined,
+  resolveNuxtGinProjectConfig,
+  type NuxtGinServerConfig,
+} from "../src/nuxt-gin";
 import type { PackConfig } from "../src/pack";
 import {
   printCommandBanner,
@@ -36,11 +41,11 @@ export const ZIP_PATH = Path.resolve(process.cwd(), ".build/production/server.7z
 export const SERVER_PATH = Path.resolve(process.cwd(), ".build/production/server");
 // 定义原始 dist 目录路径，用于清理操作
 export const ORIGINAL_DIST_PATH = Path.resolve(process.cwd(), "dist");
-export const PACK_CONFIG_PATH = Path.resolve(process.cwd(), "pack.config.json");
-export const PACK_CONFIG_TS_PATH = Path.resolve(process.cwd(), "pack.config.ts");
-export const PACK_CONFIG_JS_PATH = Path.resolve(process.cwd(), "pack.config.js");
-export const PACK_CONFIG_CJS_PATH = Path.resolve(process.cwd(), "pack.config.cjs");
-export const PACK_CONFIG_MJS_PATH = Path.resolve(process.cwd(), "pack.config.mjs");
+export const LEGACY_PACK_CONFIG_PATH = Path.resolve(process.cwd(), "pack.config.json");
+export const LEGACY_PACK_CONFIG_TS_PATH = Path.resolve(process.cwd(), "pack.config.ts");
+export const LEGACY_PACK_CONFIG_JS_PATH = Path.resolve(process.cwd(), "pack.config.js");
+export const LEGACY_PACK_CONFIG_CJS_PATH = Path.resolve(process.cwd(), "pack.config.cjs");
+export const LEGACY_PACK_CONFIG_MJS_PATH = Path.resolve(process.cwd(), "pack.config.mjs");
 
 export const BUILD_EXECUTABLE = os.platform() === "win32" ? "production.exe" : "production";
 export const SERVER_EXECUTABLE =
@@ -58,7 +63,6 @@ export const PACKAGE_JSON_CONTENT = {
 const DEFAULT_FILES_TO_COPY = {
   "vue/.output": "vue/.output", // Vue 应用构建输出
   [`.build/.server/${BUILD_EXECUTABLE}`]: SERVER_EXECUTABLE, // 生产环境可执行文件
-  "server.config.json": "server.config.json", // 服务器配置文件
 };
 
 // 兼容旧导出：默认构建目录下的绝对目标路径
@@ -211,7 +215,28 @@ function writeScriptFiles(serverPath: string, config?: PackConfig) {
 /**
  * 将配置的源文件复制到构建目录
  */
-function copyGeneratedFiles(serverPath: string, config?: PackConfig) {
+function writeServerConfigFile(serverPath: string, serverConfig?: NuxtGinServerConfig) {
+  const resolvedDest = Path.resolve(serverPath, "server.config.json");
+  const projectServerConfigPath = Path.resolve(process.cwd(), "server.config.json");
+  if (FS.existsSync(projectServerConfigPath)) {
+    FS.copySync(projectServerConfigPath, resolvedDest);
+    return;
+  }
+
+  if (!serverConfig) {
+    throw new Error(
+      "server.config.json is missing and no serverConfig was found in nuxt-gin.config.ts",
+    );
+  }
+
+  FS.outputJSONSync(resolvedDest, serverConfig, { spaces: 2 });
+}
+
+function copyGeneratedFiles(
+  serverPath: string,
+  config?: PackConfig,
+  serverConfig?: NuxtGinServerConfig,
+) {
   const copyOptions = {
     overwrite: config?.overwrite !== false,
     errorOnExist: config?.overwrite === false,
@@ -244,6 +269,8 @@ function copyGeneratedFiles(serverPath: string, config?: PackConfig) {
       FS.copySync(resolvedSrc, resolvedDest, copyOptions);
     }
   }
+
+  writeServerConfigFile(serverPath, serverConfig);
 }
 
 function mergePackageJson(
@@ -270,11 +297,11 @@ function mergePackageJson(
 
 function readPackConfigFromCwd(): PackConfig | undefined {
   const candidates = [
-    PACK_CONFIG_TS_PATH,
-    PACK_CONFIG_JS_PATH,
-    PACK_CONFIG_CJS_PATH,
-    PACK_CONFIG_MJS_PATH,
-    PACK_CONFIG_PATH,
+    LEGACY_PACK_CONFIG_TS_PATH,
+    LEGACY_PACK_CONFIG_JS_PATH,
+    LEGACY_PACK_CONFIG_CJS_PATH,
+    LEGACY_PACK_CONFIG_MJS_PATH,
+    LEGACY_PACK_CONFIG_PATH,
   ].filter((configPath) => FS.existsSync(configPath));
 
   if (candidates.length === 0) {
@@ -283,7 +310,7 @@ function readPackConfigFromCwd(): PackConfig | undefined {
 
   if (candidates.length > 1) {
     warnPackConfig(
-      `multiple pack config files found (${candidates.map((item) => Path.basename(item)).join(", ")}); using ${Path.basename(candidates[0])}`,
+      `multiple legacy pack config files found (${candidates.map((item) => Path.basename(item)).join(", ")}); using ${Path.basename(candidates[0])}`,
     );
   }
 
@@ -369,8 +396,19 @@ function cleanUp(config?: PackConfig) {
  */
 export async function buildAndPack(config?: PackConfig) {
   printCommandBanner("build", "Build project artifacts and pack deployment bundle");
+  const projectConfig = resolveNuxtGinProjectConfig();
+  for (const warning of projectConfig.warnings) {
+    printCommandWarn(`[config] ${warning}`);
+  }
   const actions: string[] = [];
-  const resolvedConfig = config ?? readPackConfigFromCwd();
+  const legacyPackConfig = readPackConfigFromCwd();
+  if (!projectConfig.config.pack && legacyPackConfig) {
+    printCommandWarn("[config] using legacy pack.config.* fallback; migrate to nuxt-gin.config.ts");
+  }
+  const resolvedConfig = mergeDefined<PackConfig>(
+    projectConfig.config.pack ?? legacyPackConfig,
+    config,
+  );
   const serverPath = resolveServerPath(resolvedConfig);
   const zipPath = resolveZipPath(resolvedConfig);
   if (!resolvedConfig?.skipBuild) {
@@ -384,7 +422,7 @@ export async function buildAndPack(config?: PackConfig) {
     await resolvedConfig.beforePack();
     actions.push("ran beforePack hook");
   }
-  copyGeneratedFiles(serverPath, resolvedConfig); // 复制相关文件
+  copyGeneratedFiles(serverPath, resolvedConfig, projectConfig.config.serverConfig); // 复制相关文件
   actions.push(`assembled bundle in ${serverPath}`);
   if (resolvedConfig?.writeScripts !== false) {
     writeScriptFiles(serverPath, resolvedConfig); // 写入脚本文件
