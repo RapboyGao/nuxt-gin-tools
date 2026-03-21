@@ -1,21 +1,26 @@
 import concurrently from "concurrently";
-import { detectPackageManager, packageManagerUpdateCommand } from "../src/package-manager";
+import {
+  packageManagerUpdateCommand,
+  resolvePackageManager,
+  type PackageManagerSelection,
+} from "../src/package-manager";
 import { printCommandBanner, printCommandSuccess, printCommandWarn } from "../src/terminal-ui";
 
 export type UpdateOptions = {
-  latest?: boolean;
+  latest: boolean;
+  packageManager: PackageManagerSelection;
   skipGo?: boolean;
   skipNode?: boolean;
 };
 
-export function update(options: UpdateOptions = {}) {
+export function update(options: UpdateOptions) {
   printCommandBanner("update", "Update Node and Go dependencies");
   const commands = [];
-  const packageManager = detectPackageManager();
+  const packageManager = resolvePackageManager(options.packageManager);
 
   if (!options.skipNode) {
     commands.push({
-      command: packageManagerUpdateCommand(packageManager, options.latest === true),
+      command: packageManagerUpdateCommand(packageManager, options.latest),
       name: packageManager,
       prefixColor: "magenta" as const,
     });

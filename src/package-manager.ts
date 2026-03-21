@@ -2,6 +2,8 @@ import { existsSync } from "fs-extra";
 import { join } from "path";
 
 export type PackageManager = "bun" | "pnpm" | "npm";
+export type PackageManagerSelection = PackageManager | "auto";
+export const PACKAGE_MANAGER_SELECTIONS = ["auto", "bun", "pnpm", "npm"] as const;
 
 const cwd = process.cwd();
 
@@ -13,6 +15,17 @@ export function detectPackageManager(): PackageManager {
     return "pnpm";
   }
   return "npm";
+}
+
+export function resolvePackageManager(selection: PackageManagerSelection): PackageManager {
+  if (selection === "auto") {
+    return detectPackageManager();
+  }
+  return selection;
+}
+
+export function isPackageManagerSelection(value: string): value is PackageManagerSelection {
+  return (PACKAGE_MANAGER_SELECTIONS as readonly string[]).includes(value);
 }
 
 export function packageManagerUpdateCommand(

@@ -47,3 +47,22 @@ export function hasFlag(options: CLIOptions, key: string): boolean {
 export function getOption(options: CLIOptions, key: string): string | undefined {
   return options.values.get(normalizeKey(key));
 }
+
+export function getBooleanOption(
+  options: CLIOptions,
+  key: string,
+  defaultValue: boolean,
+): boolean {
+  const value = getOption(options, key);
+  if (value === undefined) {
+    return defaultValue;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (["true", "1", "yes", "y", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["false", "0", "no", "n", "off"].includes(normalized)) {
+    return false;
+  }
+  throw new Error(`Invalid boolean value for --${key}: ${value}`);
+}

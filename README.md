@@ -111,14 +111,23 @@ Also prints a styled command banner before cleanup starts.
 
 Updates project dependencies with a conservative default strategy:
 
-- Node: auto-detects `bun update`, `pnpm update`, or `npm update`
+- Node: package manager is controlled by `--package-manager`, default `auto`
 - Go: `go get -u=patch ./... && go mod tidy`
 
-Flags:
+Options:
 
-- `--latest`: switch to a more aggressive upgrade strategy
+- `--package-manager <auto|bun|pnpm|npm>`: package manager selection, default `auto`
+- `--latest <true|false>`: whether to use the aggressive update strategy, default `false`
 - `--skip-go`: skip Go dependency updates
 - `--skip-node`: skip Node dependency updates
+
+Examples:
+
+```bash
+nuxt-gin update
+nuxt-gin update --package-manager bun --latest true
+nuxt-gin update --package-manager pnpm --latest false
+```
 
 Also prints a styled command banner before execution.
 
@@ -356,14 +365,23 @@ nuxt-gin dev --no-cleanup
 
 按偏保守的默认策略更新依赖：
 
-- Node：自动识别 `bun update`、`pnpm update` 或 `npm update`
+- Node：通过 `--package-manager` 控制，默认值为 `auto`
 - Go：`go get -u=patch ./... && go mod tidy`
 
 参数：
 
-- `--latest`：切换成更激进的升级策略
+- `--package-manager <auto|bun|pnpm|npm>`：指定包管理器，默认 `auto`
+- `--latest <true|false>`：是否使用更激进的升级策略，默认 `false`
 - `--skip-go`：跳过 Go 依赖更新
 - `--skip-node`：跳过 Node 依赖更新
+
+示例：
+
+```bash
+nuxt-gin update
+nuxt-gin update --package-manager bun --latest true
+nuxt-gin update --package-manager pnpm --latest false
+```
 
 执行前也会输出一段样式化 banner。
 

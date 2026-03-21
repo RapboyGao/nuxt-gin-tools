@@ -10,7 +10,11 @@ import postInstall from "./commands/postinstall";
 import cleanUp from "./commands/cleanup";
 // 导入更新功能
 import update from "./commands/update";
-import { getOption, hasFlag, parseCLIOptions } from "./src/cli-options";
+import { getBooleanOption, getOption, hasFlag, parseCLIOptions } from "./src/cli-options";
+import {
+  isPackageManagerSelection,
+  type PackageManagerSelection,
+} from "./src/package-manager";
 
 // 获取命令行参数（去除前两个默认参数）
 const args = process.argv.slice(2);
@@ -24,6 +28,14 @@ if (args.length === 0) {
 async function main() {
   const command = args[0];
   const options = parseCLIOptions(args.slice(1));
+  const rawPackageManager = getOption(options, "package-manager");
+  const packageManagerCandidate = rawPackageManager ?? "auto";
+  if (!isPackageManagerSelection(packageManagerCandidate)) {
+    throw new Error(
+      `Invalid value for --package-manager: ${packageManagerCandidate}. Expected one of: auto, bun, pnpm, npm`,
+    );
+  }
+  const packageManagerOption: PackageManagerSelection = packageManagerCandidate;
 
   switch (command) {
     case "dev":
@@ -61,7 +73,8 @@ async function main() {
     case "update":
       // 更新依赖
       await update({
-        latest: hasFlag(options, "latest"),
+        latest: getBooleanOption(options, "latest", false),
+        packageManager: packageManagerOption,
         skipGo: hasFlag(options, "skip-go"),
         skipNode: hasFlag(options, "skip-node"),
       });
