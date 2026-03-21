@@ -1,14 +1,14 @@
 import * as FS from "fs-extra";
 import * as Path from "path";
 import concurrently from "concurrently";
-import { mergeDefined, resolveNuxtGinProjectConfig } from "../src/nuxt-gin";
+import { mergeDefined, resolveNuxtGinProjectConfig } from "../../nuxt-gin";
 import {
   printCommandBanner,
   printCommandInfo,
   printCommandSuccess,
   printCommandSummary,
   printCommandWarn,
-} from "../src/terminal-ui";
+} from "../terminal-ui";
 
 const cwd = process.cwd();
 const CLEANUP_PATHS = [

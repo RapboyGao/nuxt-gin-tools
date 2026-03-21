@@ -1,4 +1,4 @@
-import type { BuildOptions } from "../commands/builder";
+import type { BuildOptions } from "./services/build-service";
 
 export interface PackConfig extends BuildOptions {
   /**

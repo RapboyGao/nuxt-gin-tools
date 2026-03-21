@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import os from "os";
-import { printCommandSuccess } from "./terminal-ui";
+import { printCommandSuccess } from "./cli/terminal-ui";
 
 type KillPortOptions = {
   logPrefix?: string;

@@ -2,9 +2,9 @@ import { spawn, type ChildProcess } from "child_process";
 import chokidar from "chokidar";
 import { existsSync, readFileSync } from "fs-extra";
 import { extname, isAbsolute, join, relative, resolve } from "path";
-import { readLegacyServerConfig } from "../src/nuxt-gin";
-import { killPort } from "../src/utils";
-import { printCommandError, printCommandLog, printCommandWarn } from "../src/terminal-ui";
+import { readLegacyServerConfig } from "../nuxt-gin";
+import { killPort } from "../system/ports";
+import { printCommandError, printCommandLog, printCommandWarn } from "../cli/terminal-ui";
 
 const cwd = process.cwd();
 const RESTART_DEBOUNCE_MS = 150;

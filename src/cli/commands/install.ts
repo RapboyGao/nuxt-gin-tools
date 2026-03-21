@@ -1,12 +1,12 @@
 import concurrently from "concurrently";
 import { spawnSync } from "node:child_process";
-import { mergeDefined, resolveNuxtGinProjectConfig } from "../src/nuxt-gin";
+import { mergeDefined, resolveNuxtGinProjectConfig } from "../../nuxt-gin";
 import {
   printCommandBanner,
   printCommandSuccess,
   printCommandSummary,
   printCommandWarn,
-} from "../src/terminal-ui";
+} from "../terminal-ui";
 
 export type PostInstallOptions = {
   skipGo?: boolean;

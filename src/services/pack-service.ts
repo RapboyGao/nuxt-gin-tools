@@ -1,20 +1,11 @@
-// 导入项目构建工具，用于执行 Nuxt 项目的构建流程
-import build from "./builder";
-// 导入 7zip 压缩工具库，用于将构建后的文件打包为 7z 格式
+import build from "./build-service";
 import * as Zip from "7zip-min";
-// 导入增强版的文件系统模块，提供更丰富的文件操作 API
 import * as FS from "fs-extra";
-// 导入路径处理模块，用于规范化和解析文件路径
 import * as Path from "path";
-
 import * as os from "os";
 import fg from "fast-glob";
-import {
-  mergeDefined,
-  readLegacyServerConfig,
-  resolveNuxtGinProjectConfig,
-} from "../src/nuxt-gin";
-import type { PackConfig } from "../src/pack";
+import { mergeDefined, readLegacyServerConfig, resolveNuxtGinProjectConfig } from "../nuxt-gin";
+import type { PackConfig } from "../pack";
 import {
   printCommandBanner,
   printCommandError,
@@ -22,24 +13,16 @@ import {
   printCommandSuccess,
   printCommandSummary,
   printCommandWarn,
-} from "../src/terminal-ui";
+} from "../cli/terminal-ui";
 
 const { createJiti } = require("jiti");
 
-/**
- * 生成相对于服务器构建目录的绝对路径
- * @param relativePath - 相对路径
- * @returns 解析后的绝对路径
- */
 export function builtPath(relativePath: string): string {
   return Path.resolve(SERVER_PATH, relativePath);
 }
 
-// 定义打包后的 7z 文件输出路径
 export const ZIP_PATH = Path.resolve(process.cwd(), ".build/production/server.7z");
-// 定义服务器构建文件的输出目录
 export const SERVER_PATH = Path.resolve(process.cwd(), ".build/production/server");
-// 定义原始 dist 目录路径，用于清理操作
 export const ORIGINAL_DIST_PATH = Path.resolve(process.cwd(), "dist");
 export const LEGACY_PACK_CONFIG_PATH = Path.resolve(process.cwd(), "pack.config.json");
 export const LEGACY_PACK_CONFIG_TS_PATH = Path.resolve(process.cwd(), "pack.config.ts");
@@ -49,23 +32,20 @@ export const LEGACY_PACK_CONFIG_MJS_PATH = Path.resolve(process.cwd(), "pack.con
 
 export const BUILD_EXECUTABLE = os.platform() === "win32" ? "production.exe" : "production";
 export const SERVER_EXECUTABLE =
-  os.platform() === "win32" ? "server-production.exe" : "server-production"; // 根据操作系统选择可执行文件名
+  os.platform() === "win32" ? "server-production.exe" : "server-production";
 
-// 定义打包后项目的 package.json 内容
 export const PACKAGE_JSON_CONTENT = {
   private: true,
   scripts: {
-    start: `./${SERVER_EXECUTABLE}`, // 定义启动命令
+    start: `./${SERVER_EXECUTABLE}`,
   },
 };
 
-// 定义需要复制到构建目录的文件映射关系（目标为构建目录下的相对路径）
 const DEFAULT_FILES_TO_COPY = {
-  "vue/.output": "vue/.output", // Vue 应用构建输出
-  [`.build/.server/${BUILD_EXECUTABLE}`]: SERVER_EXECUTABLE, // 生产环境可执行文件
+  "vue/.output": "vue/.output",
+  [`.build/.server/${BUILD_EXECUTABLE}`]: SERVER_EXECUTABLE,
 };
 
-// 兼容旧导出：默认构建目录下的绝对目标路径
 export const FILES_TO_COPY = Object.fromEntries(
   Object.entries(DEFAULT_FILES_TO_COPY).map(([src, dest]) => [src, builtPath(dest)]),
 );
@@ -197,24 +177,14 @@ function validatePackConfig(config: unknown, sourcePath: string): PackConfig {
   return config as PackConfig;
 }
 
-/**
- * 写入启动脚本和 package.json 文件到构建目录
- */
 function writeScriptFiles(serverPath: string, config?: PackConfig) {
-  // 写入 Windows 批处理启动脚本
   FS.outputFileSync(Path.resolve(serverPath, "start.bat"), `powershell -ExecutionPolicy ByPass -File ./start.ps1`);
-  // 写入 PowerShell 启动脚本
   FS.outputFileSync(Path.resolve(serverPath, "start.ps1"), `./${SERVER_EXECUTABLE}`);
-  // 写入 Linux/macOS 启动脚本
   FS.outputFileSync(Path.resolve(serverPath, "start.sh"), `./${SERVER_EXECUTABLE}`);
-  // 写入 package.json 文件，使用 2 个空格缩进
   const mergedPackageJson = mergePackageJson(PACKAGE_JSON_CONTENT, config?.packageJson);
   FS.outputJSONSync(Path.resolve(serverPath, "package.json"), mergedPackageJson, { spaces: 2 });
 }
 
-/**
- * 将配置的源文件复制到构建目录
- */
 function writeServerConfigFile(serverPath: string) {
   const resolvedDest = Path.resolve(serverPath, "server.config.json");
   const projectServerConfigPath = Path.resolve(process.cwd(), "server.config.json");
@@ -225,15 +195,11 @@ function writeServerConfigFile(serverPath: string) {
   throw new Error("server.config.json is required for packaging output");
 }
 
-function copyGeneratedFiles(
-  serverPath: string,
-  config?: PackConfig,
-) {
+function copyGeneratedFiles(serverPath: string, config?: PackConfig) {
   const copyOptions = {
     overwrite: config?.overwrite !== false,
     errorOnExist: config?.overwrite === false,
   };
-  // 遍历文件映射，将每个源文件复制到目标位置
   for (const [src, dest] of Object.entries(DEFAULT_FILES_TO_COPY)) {
     const resolvedDest = Path.resolve(serverPath, dest);
     FS.copySync(Path.resolve(process.cwd(), src), resolvedDest, copyOptions);
@@ -346,12 +312,8 @@ function resolveZipPath(config?: PackConfig): string {
   return ZIP_PATH;
 }
 
-/**
- * 打包文件为7z格式
- */
 function makeZip(serverPath: string, zipPath: string) {
   return new Promise((resolve, reject) => {
-    // 使用 7zip 将服务器构建目录打包为 7z 文件
     Zip.pack(serverPath, zipPath, (error) => {
       if (error) {
         printCommandError("打包失败", error);
@@ -365,27 +327,15 @@ function makeZip(serverPath: string, zipPath: string) {
   });
 }
 
-/**
- * 清理原始 dist 目录
- */
 function cleanUp(config?: PackConfig) {
   if (config?.cleanDist === false) {
     return;
   }
-  // 检查原始 dist 目录是否存在，存在则删除
   if (FS.existsSync(ORIGINAL_DIST_PATH)) {
     FS.removeSync(ORIGINAL_DIST_PATH);
   }
 }
 
-/**
- * 构建并打包项目的主函数
- * 1. 执行项目构建
- * 2. 复制生成的文件
- * 3. 写入启动脚本
- * 4. 打包文件为 7z 格式
- * 5. 清理原始 dist 目录
- */
 export async function buildAndPack(config?: PackConfig) {
   printCommandBanner("build", "Build project artifacts and pack deployment bundle");
   const projectConfig = resolveNuxtGinProjectConfig();
@@ -407,7 +357,7 @@ export async function buildAndPack(config?: PackConfig) {
   const serverPath = resolveServerPath(resolvedConfig);
   const zipPath = resolveZipPath(resolvedConfig);
   if (!resolvedConfig?.skipBuild) {
-    await build(resolvedConfig); // 执行项目构建
+    await build(resolvedConfig);
     actions.push("built project artifacts");
   } else {
     printCommandInfo("build", "skipping build step");
@@ -417,16 +367,16 @@ export async function buildAndPack(config?: PackConfig) {
     await resolvedConfig.beforePack();
     actions.push("ran beforePack hook");
   }
-  copyGeneratedFiles(serverPath, resolvedConfig); // 复制相关文件
+  copyGeneratedFiles(serverPath, resolvedConfig);
   actions.push(`assembled bundle in ${serverPath}`);
   if (resolvedConfig?.writeScripts !== false) {
-    writeScriptFiles(serverPath, resolvedConfig); // 写入脚本文件
+    writeScriptFiles(serverPath, resolvedConfig);
     actions.push("wrote startup scripts and package.json");
   } else {
     actions.push("skipped startup script generation");
   }
   if (!resolvedConfig?.skipZip) {
-    await makeZip(serverPath, zipPath); // 打包文件
+    await makeZip(serverPath, zipPath);
     printCommandInfo("pack", `7z archive: ${zipPath}`);
     actions.push(`created 7z archive at ${zipPath}`);
   } else {
@@ -438,7 +388,7 @@ export async function buildAndPack(config?: PackConfig) {
     await resolvedConfig.afterPack(zipPath);
     actions.push("ran afterPack hook");
   }
-  cleanUp(resolvedConfig); // 清理临时文件
+  cleanUp(resolvedConfig);
   if (resolvedConfig?.cleanDist === false) {
     actions.push("kept dist directory by configuration");
   } else {

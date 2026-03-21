@@ -2,20 +2,20 @@ import concurrently from "concurrently";
 import { ensureDirSync, existsSync } from "fs-extra";
 import { join } from "path";
 import cleanUp from "./cleanup";
-import postInstall from "./postinstall";
-import { startGoDev } from "./dev-go";
+import postInstall from "./install";
+import { startGoDev } from "../../services/go-dev-service";
 import {
   mergeDefined,
   readLegacyServerConfig,
   resolveNuxtGinProjectConfig,
-} from "../src/nuxt-gin";
-import type { ServerConfigJson } from "../src/nuxt-config";
-import { killPorts } from "../src/utils";
+} from "../../nuxt-gin";
+import type { ServerConfigJson } from "../../nuxt-config";
+import { killPorts } from "../../system/ports";
 import {
   printCommandBanner,
   printCommandSummary,
   printCommandWarn,
-} from "../src/terminal-ui";
+} from "../terminal-ui";
 
 const cwd = process.cwd();
 

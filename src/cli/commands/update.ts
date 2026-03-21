@@ -3,17 +3,17 @@ import {
   packageManagerUpdateCommand,
   resolvePackageManager,
   type PackageManagerSelection,
-} from "../src/package-manager";
+} from "../../config/package-manager";
 import {
   mergeDefined,
   resolveNuxtGinProjectConfig,
-} from "../src/nuxt-gin";
+} from "../../nuxt-gin";
 import {
   printCommandBanner,
   printCommandSuccess,
   printCommandSummary,
   printCommandWarn,
-} from "../src/terminal-ui";
+} from "../terminal-ui";
 
 export type UpdateOptions = {
   latest?: boolean;

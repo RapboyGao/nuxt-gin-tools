@@ -1,9 +1,9 @@
 import * as FS from "fs-extra";
 import * as Path from "path";
-import type { CleanupOptions } from "../commands/cleanup";
-import type { DevelopOptions } from "../commands/develop";
-import type { PostInstallOptions } from "../commands/postinstall";
-import type { UpdateOptions } from "../commands/update";
+import type { CleanupOptions } from "./cli/commands/cleanup";
+import type { DevelopOptions } from "./cli/commands/develop";
+import type { PostInstallOptions } from "./cli/commands/install";
+import type { UpdateOptions } from "./cli/commands/update";
 import type { PackConfig } from "./pack";
 import type { ServerConfigJson } from "./nuxt-config";
 

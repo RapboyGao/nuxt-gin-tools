@@ -8,21 +8,20 @@ export async function handleNuxtConfig() {
   }
   contents = contents.replace(
     /export declare function createDefaultConfig\((?:.|\n)*?\n\};/gm,
-    `export function createDefaultConfig(config: MyNuxtConfig): NuxtConfig;`
+    `export function createDefaultConfig(config: MyNuxtConfig): NuxtConfig;`,
   );
   writeFileSync("./dist/src/nuxt-config.d.ts", contents);
 }
 
-export async function build() {
+export async function buildPackage() {
   removeSync("dist/.air.toml");
   copySync("package.json", "dist/package.json");
   copySync("README.md", "dist/README.md");
   copySync("LICENSE", "dist/LICENSE");
-  copySync("src/go-gin-server.json", "dist/src/go-gin-server.json");
-  copySync("src/server-config.json", "dist/src/server-config.json");
-  copySync("src/pack-config.schema.json", "dist/src/pack-config.schema.json");
+  copySync("src/assets/go-gin-server.json", "dist/src/assets/go-gin-server.json");
+  copySync("src/assets/server-config.schema.json", "dist/src/assets/server-config.schema.json");
+  copySync("src/assets/pack-config.schema.json", "dist/src/assets/pack-config.schema.json");
   copySync(".go-watch.json", "dist/.go-watch.json");
-  // 执行并发命令
   await concurrently([
     {
       command: "tsc",
@@ -34,4 +33,4 @@ export async function build() {
   await handleNuxtConfig();
 }
 
-build();
+void buildPackage();
