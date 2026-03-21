@@ -9,13 +9,7 @@ import type { ServerConfigJson } from "./nuxt-config";
 
 const { createJiti } = require("jiti");
 
-export interface NuxtGinServerConfig extends ServerConfigJson {
-  cleanupBeforeDevelop?: boolean;
-  killPortBeforeDevelop?: boolean;
-}
-
 export interface NuxtGinConfig {
-  serverConfig?: NuxtGinServerConfig;
   dev?: DevelopOptions & {
     cleanupBeforeDevelop?: boolean;
     killPortBeforeDevelop?: boolean;
@@ -63,7 +57,7 @@ function loadConfigModule(configPath: string): unknown {
   return jiti(configPath);
 }
 
-function validateServerConfig(serverConfig: unknown, sourceLabel: string): NuxtGinServerConfig {
+function validateServerConfig(serverConfig: unknown, sourceLabel: string): ServerConfigJson {
   if (!isPlainObject(serverConfig)) {
     throw new Error(`${sourceLabel}: serverConfig must be an object`);
   }
@@ -79,20 +73,14 @@ function validateServerConfig(serverConfig: unknown, sourceLabel: string): NuxtG
     throw new Error(`${sourceLabel}: serverConfig.ginPort must be a positive integer`);
   }
 
-  return serverConfig as unknown as NuxtGinServerConfig;
+  return serverConfig as unknown as ServerConfigJson;
 }
 
 function validateNuxtGinConfig(config: unknown, sourcePath: string): NuxtGinConfig {
   if (!isPlainObject(config)) {
     throw new Error(`${Path.basename(sourcePath)} must export an object`);
   }
-
-  const typedConfig = config as NuxtGinConfig;
-  if (typedConfig.serverConfig !== undefined) {
-    validateServerConfig(typedConfig.serverConfig, Path.basename(sourcePath));
-  }
-
-  return typedConfig;
+  return config as NuxtGinConfig;
 }
 
 export function loadNuxtGinConfig(): LoadedNuxtGinConfig | undefined {
@@ -125,7 +113,7 @@ export function loadNuxtGinConfig(): LoadedNuxtGinConfig | undefined {
   };
 }
 
-export function readLegacyServerConfig(): NuxtGinServerConfig | undefined {
+export function readLegacyServerConfig(): ServerConfigJson | undefined {
   if (!FS.existsSync(LEGACY_SERVER_CONFIG_PATH)) {
     return undefined;
   }
@@ -137,14 +125,8 @@ export function readLegacyServerConfig(): NuxtGinServerConfig | undefined {
 
 export function resolveNuxtGinProjectConfig(): LoadedNuxtGinConfig {
   const loaded = loadNuxtGinConfig();
-  const legacyServerConfig = readLegacyServerConfig();
-  const config = loaded?.config ?? {};
-
   return {
-    config: {
-      ...config,
-      serverConfig: config.serverConfig ?? legacyServerConfig,
-    },
+    config: loaded?.config ?? {},
     sourcePath: loaded?.sourcePath,
     warnings: loaded?.warnings ?? [],
   };

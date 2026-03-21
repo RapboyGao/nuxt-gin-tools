@@ -11,8 +11,8 @@ import * as os from "os";
 import fg from "fast-glob";
 import {
   mergeDefined,
+  readLegacyServerConfig,
   resolveNuxtGinProjectConfig,
-  type NuxtGinServerConfig,
 } from "../src/nuxt-gin";
 import type { PackConfig } from "../src/pack";
 import {
@@ -215,27 +215,19 @@ function writeScriptFiles(serverPath: string, config?: PackConfig) {
 /**
  * 将配置的源文件复制到构建目录
  */
-function writeServerConfigFile(serverPath: string, serverConfig?: NuxtGinServerConfig) {
+function writeServerConfigFile(serverPath: string) {
   const resolvedDest = Path.resolve(serverPath, "server.config.json");
   const projectServerConfigPath = Path.resolve(process.cwd(), "server.config.json");
   if (FS.existsSync(projectServerConfigPath)) {
     FS.copySync(projectServerConfigPath, resolvedDest);
     return;
   }
-
-  if (!serverConfig) {
-    throw new Error(
-      "server.config.json is missing and no serverConfig was found in nuxt-gin.config.ts",
-    );
-  }
-
-  FS.outputJSONSync(resolvedDest, serverConfig, { spaces: 2 });
+  throw new Error("server.config.json is required for packaging output");
 }
 
 function copyGeneratedFiles(
   serverPath: string,
   config?: PackConfig,
-  serverConfig?: NuxtGinServerConfig,
 ) {
   const copyOptions = {
     overwrite: config?.overwrite !== false,
@@ -270,7 +262,7 @@ function copyGeneratedFiles(
     }
   }
 
-  writeServerConfigFile(serverPath, serverConfig);
+  writeServerConfigFile(serverPath);
 }
 
 function mergePackageJson(
@@ -409,6 +401,9 @@ export async function buildAndPack(config?: PackConfig) {
     projectConfig.config.pack ?? legacyPackConfig,
     config,
   );
+  if (!readLegacyServerConfig()) {
+    throw new Error("server.config.json is required in project root before running build");
+  }
   const serverPath = resolveServerPath(resolvedConfig);
   const zipPath = resolveZipPath(resolvedConfig);
   if (!resolvedConfig?.skipBuild) {
@@ -422,7 +417,7 @@ export async function buildAndPack(config?: PackConfig) {
     await resolvedConfig.beforePack();
     actions.push("ran beforePack hook");
   }
-  copyGeneratedFiles(serverPath, resolvedConfig, projectConfig.config.serverConfig); // 复制相关文件
+  copyGeneratedFiles(serverPath, resolvedConfig); // 复制相关文件
   actions.push(`assembled bundle in ${serverPath}`);
   if (resolvedConfig?.writeScripts !== false) {
     writeScriptFiles(serverPath, resolvedConfig); // 写入脚本文件

@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from "child_process";
 import chokidar from "chokidar";
 import { existsSync, readFileSync } from "fs-extra";
 import { extname, isAbsolute, join, relative, resolve } from "path";
-import { resolveNuxtGinProjectConfig } from "../src/nuxt-gin";
+import { readLegacyServerConfig } from "../src/nuxt-gin";
 import { killPort } from "../src/utils";
 import { printCommandError, printCommandLog, printCommandWarn } from "../src/terminal-ui";
 
@@ -43,16 +43,12 @@ type GoWatchConfigInput = {
 };
 
 function getGinPort(): number | null {
-  const projectConfig = resolveNuxtGinProjectConfig();
-  for (const warning of projectConfig.warnings) {
-    printCommandWarn(`[config] ${warning}`);
-  }
-  const ginPort = projectConfig.config.serverConfig?.ginPort;
+  const ginPort = readLegacyServerConfig()?.ginPort;
   if (Number.isInteger(ginPort) && (ginPort as number) > 0) {
     return ginPort as number;
   }
   if (!existsSync(join(cwd, "server.config.json"))) {
-    return null;
+    printCommandWarn("[config] server.config.json not found; Go watcher will start without port cleanup");
   }
   return null;
 }

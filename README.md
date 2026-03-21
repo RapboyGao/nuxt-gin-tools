@@ -161,10 +161,8 @@ Recommended TypeScript form:
 import createNuxtGinConfig from 'nuxt-gin-tools/src/nuxt-gin';
 
 export default createNuxtGinConfig({
-  serverConfig: {
-    baseUrl: '/web',
-    nuxtPort: 3000,
-    ginPort: 8099,
+  dev: {
+    killPortBeforeDevelop: true,
   },
   pack: {
     zipName: 'server.7z',
@@ -189,10 +187,8 @@ Use the helper from [`src/nuxt-gin.ts`](./src/nuxt-gin.ts):
 import createNuxtGinConfig from 'nuxt-gin-tools/src/nuxt-gin';
 
 export default createNuxtGinConfig({
-  serverConfig: {
-    baseUrl: '/web',
-    nuxtPort: 3000,
-    ginPort: 8099,
+  dev: {
+    killPortBeforeDevelop: true,
   },
   pack: {
     serverPath: '.build/production/server',
@@ -213,7 +209,6 @@ It provides:
 
 `dev`, `install`, `cleanup`, `update`, and `build` can all read defaults from this file:
 
-- `serverConfig`: shared Nuxt/Gin runtime ports and base URL
 - `dev`: development command defaults
 - `install`: bootstrap command defaults
 - `cleanup`: cleanup command defaults
@@ -227,10 +222,8 @@ It provides:
 - `ginPort`: Gin server port
 - `nuxtPort`: Nuxt dev port
 - `baseUrl`: Nuxt base URL
-- `killPortBeforeDevelop`: whether to free ports before dev, default `true`
-- `cleanupBeforeDevelop`: whether to cleanup before dev, default `false`
 
-If it is missing, `nuxt-gin build` can generate it from `nuxt-gin.config.ts`.
+`nuxt-gin build` requires this file to exist in the project root.
 
 #### Frontend Runtime Exposure
 
@@ -445,10 +438,8 @@ nuxt-gin update --package-manager pnpm --latest false
 import createNuxtGinConfig from 'nuxt-gin-tools/src/nuxt-gin';
 
 export default createNuxtGinConfig({
-  serverConfig: {
-    baseUrl: '/web',
-    nuxtPort: 3000,
-    ginPort: 8099,
+  dev: {
+    killPortBeforeDevelop: true,
   },
   pack: {
     zipName: 'server.7z',
@@ -473,10 +464,8 @@ export default createNuxtGinConfig({
 import createNuxtGinConfig from 'nuxt-gin-tools/src/nuxt-gin';
 
 export default createNuxtGinConfig({
-  serverConfig: {
-    baseUrl: '/web',
-    nuxtPort: 3000,
-    ginPort: 8099,
+  dev: {
+    killPortBeforeDevelop: true,
   },
   pack: {
     serverPath: '.build/production/server',
@@ -497,7 +486,6 @@ export default createNuxtGinConfig({
 
 `dev`、`install`、`cleanup`、`update`、`build` 都可以从这个文件读取默认值：
 
-- `serverConfig`：Nuxt/Gin 共享端口与基础路径
 - `dev`：开发命令默认行为
 - `install`：初始化命令默认行为
 - `cleanup`：清理命令默认行为
@@ -511,10 +499,8 @@ export default createNuxtGinConfig({
 - `ginPort`：Gin 服务端口
 - `nuxtPort`：Nuxt 开发端口
 - `baseUrl`：Nuxt 的 base URL
-- `killPortBeforeDevelop`：开发前是否释放端口，默认 `true`
-- `cleanupBeforeDevelop`：开发前是否执行 cleanup，默认 `false`
 
-如果这个文件缺失，`nuxt-gin build` 会尝试从 `nuxt-gin.config.ts` 生成它。
+`nuxt-gin build` 要求项目根目录中存在这个文件。
 
 #### 前端运行时暴露
 

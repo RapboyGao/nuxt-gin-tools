@@ -6,9 +6,10 @@ import postInstall from "./postinstall";
 import { startGoDev } from "./dev-go";
 import {
   mergeDefined,
+  readLegacyServerConfig,
   resolveNuxtGinProjectConfig,
-  type NuxtGinServerConfig,
 } from "../src/nuxt-gin";
+import type { ServerConfigJson } from "../src/nuxt-config";
 import { killPorts } from "../src/utils";
 import {
   printCommandBanner,
@@ -26,7 +27,7 @@ export type DevelopOptions = {
 
 type DevelopContext = {
   options: DevelopOptions;
-  serverConfig: NuxtGinServerConfig;
+  serverConfig: ServerConfigJson;
   cleanupBeforeDevelop: boolean;
   killPortBeforeDevelop: boolean;
 };
@@ -36,9 +37,10 @@ function resolveDevelopContext(options: DevelopOptions = {}): DevelopContext {
   for (const warning of projectConfig.warnings) {
     printCommandWarn(`[config] ${warning}`);
   }
-  if (!projectConfig.config.serverConfig) {
+  const serverConfig = readLegacyServerConfig();
+  if (!serverConfig) {
     throw new Error(
-      "serverConfig is required. Define it in nuxt-gin.config.ts or keep server.config.json in project root.",
+      "server.config.json is required in project root for ginPort, nuxtPort, and baseUrl.",
     );
   }
 
@@ -47,15 +49,13 @@ function resolveDevelopContext(options: DevelopOptions = {}): DevelopContext {
     options,
   );
   const cleanupBeforeDevelop =
-    projectConfig.config.dev?.cleanupBeforeDevelop ??
-    (projectConfig.config.serverConfig.cleanupBeforeDevelop === true);
+    projectConfig.config.dev?.cleanupBeforeDevelop ?? false;
   const killPortBeforeDevelop =
-    projectConfig.config.dev?.killPortBeforeDevelop ??
-    (projectConfig.config.serverConfig.killPortBeforeDevelop !== false);
+    projectConfig.config.dev?.killPortBeforeDevelop ?? true;
 
   return {
     options: resolvedOptions,
-    serverConfig: projectConfig.config.serverConfig,
+    serverConfig,
     cleanupBeforeDevelop,
     killPortBeforeDevelop,
   };
@@ -83,7 +83,7 @@ async function prepareDevelop(context: DevelopContext) {
   }
 }
 
-async function runNuxtDev(serverConfig: NuxtGinServerConfig) {
+async function runNuxtDev(serverConfig: ServerConfigJson) {
   await concurrently([
     {
       command: `npx nuxt dev --port=${serverConfig.nuxtPort} --host`,
@@ -93,7 +93,7 @@ async function runNuxtDev(serverConfig: NuxtGinServerConfig) {
   ]).result;
 }
 
-async function runGoDev(serverConfig: NuxtGinServerConfig) {
+async function runGoDev(serverConfig: ServerConfigJson) {
   ensureDirSync(join(cwd, ".build/.server"));
   await startGoDev(serverConfig.ginPort);
 }
