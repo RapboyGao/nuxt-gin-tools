@@ -10,7 +10,7 @@
   "license": "MIT",
   "scripts": {
     "build": "node scripts/build-package.js",
-    "publish": "cd ./dist && npm publish --access public"
+    "publish": "node scripts/publish-package.js"
   },
   "dependencies": {
     "7zip-min": "^3.0.1",
