@@ -1,18 +1,71 @@
+const { execFileSync } = require("node:child_process");
+const { input } = require("@inquirer/prompts");
 const concurrently = require("concurrently");
 const { copySync, readFileSync, removeSync, writeFileSync } = require("fs-extra");
 
 const DIST_DIR = "dist";
 const DIST_PACKAGE_JSON_PATH = `${DIST_DIR}/package.json`;
+const SEMVER_REGEX =
+  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*))*))?(?:\+([\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*))?$/;
 
 function readRootPackageJson() {
   return JSON.parse(readFileSync("package.json", "utf-8"));
 }
 
-function buildDistPackageJson(rootPackageJson) {
+function isInteractiveTerminal() {
+  return Boolean(process.stdin.isTTY && process.stdout.isTTY);
+}
+
+function incrementPatchVersion(version) {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (!match) {
+    return version;
+  }
+
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  const patch = Number(match[3]) + 1;
+  return `${major}.${minor}.${patch}`;
+}
+
+function readLatestPublishedVersion(packageName) {
+  try {
+    return execFileSync("npm", ["view", packageName, "version"], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
+async function resolveBuildVersion(rootPackageJson) {
+  const publishedVersion = readLatestPublishedVersion(rootPackageJson.name);
+  const suggestedVersion = SEMVER_REGEX.test(publishedVersion ?? "")
+    ? incrementPatchVersion(publishedVersion)
+    : rootPackageJson.version;
+
+  if (!isInteractiveTerminal()) {
+    return suggestedVersion;
+  }
+
+  return input({
+    message: `Package version ${publishedVersion ? `(latest published: ${publishedVersion})` : ""}`.trim(),
+    default: suggestedVersion,
+    validate(value) {
+      if (!SEMVER_REGEX.test(value.trim())) {
+        return "Version must be a valid semver string like 0.3.4 or 1.0.0-beta.1";
+      }
+      return true;
+    },
+  });
+}
+
+function buildDistPackageJson(rootPackageJson, version) {
   // Keep the published package manifest minimal and avoid leaking dev-only scripts.
   return {
     name: rootPackageJson.name,
-    version: rootPackageJson.version,
+    version,
     description: rootPackageJson.description,
     bin: rootPackageJson.bin,
     keywords: rootPackageJson.keywords,
@@ -22,8 +75,8 @@ function buildDistPackageJson(rootPackageJson) {
   };
 }
 
-function writeDistPackageJson() {
-  const distPackageJson = buildDistPackageJson(readRootPackageJson());
+function writeDistPackageJson(version) {
+  const distPackageJson = buildDistPackageJson(readRootPackageJson(), version);
   writeFileSync(DIST_PACKAGE_JSON_PATH, `${JSON.stringify(distPackageJson, null, 2)}\n`);
 }
 
@@ -41,6 +94,9 @@ function handleNuxtConfig() {
 }
 
 async function buildPackage() {
+  const rootPackageJson = readRootPackageJson();
+  const version = await resolveBuildVersion(rootPackageJson);
+
   // Start from a clean dist directory so removed files do not linger in publish output.
   removeSync(DIST_DIR);
 
@@ -54,7 +110,7 @@ async function buildPackage() {
   ]).result;
 
   // Copy only the files that should ship with the published package.
-  writeDistPackageJson();
+  writeDistPackageJson(version);
   copySync("README.md", `${DIST_DIR}/README.md`);
   copySync("LICENSE", `${DIST_DIR}/LICENSE`);
   copySync("src/assets/go-gin-server.json", `${DIST_DIR}/src/assets/go-gin-server.json`);
