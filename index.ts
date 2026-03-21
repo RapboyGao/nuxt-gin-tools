@@ -38,7 +38,7 @@ async function main() {
   const packageManagerCandidate = rawPackageManager ?? "auto";
   if (!isPackageManagerSelection(packageManagerCandidate)) {
     throw new Error(
-      `Invalid value for --package-manager: ${packageManagerCandidate}. Expected one of: auto, bun, pnpm, npm`,
+      `Invalid value for --package-manager: ${packageManagerCandidate}. Expected one of: auto, bun, pnpm, yarn, npm, cnpm`,
     );
   }
   const packageManagerOption: PackageManagerSelection = packageManagerCandidate;

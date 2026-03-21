@@ -2,6 +2,7 @@ import * as FS from "fs-extra";
 import * as Path from "path";
 import concurrently from "concurrently";
 import { mergeDefined, resolveNuxtGinProjectConfig } from "../../nuxt-gin";
+import { selectWithDefault } from "../prompt";
 import {
   printCommandBanner,
   printCommandInfo,
@@ -22,7 +23,73 @@ const CLEANUP_PATHS = [
 
 export type CleanupOptions = {
   dryRun?: boolean;
+  skipNuxtCleanup?: boolean;
+  cleanupPaths?: string[];
 };
+
+type CleanupMode = "full" | "nuxt-only" | "build-only";
+
+function hasExplicitCleanupOptions(options?: CleanupOptions): boolean {
+  return Boolean(options?.cleanupPaths !== undefined || options?.skipNuxtCleanup !== undefined);
+}
+
+async function resolveCleanupOptions(
+  options: CleanupOptions = {},
+  configuredOptions: CleanupOptions = {},
+): Promise<CleanupOptions> {
+  if (hasExplicitCleanupOptions(options)) {
+    return options;
+  }
+  if (
+    configuredOptions.cleanupPaths !== undefined ||
+    configuredOptions.skipNuxtCleanup !== undefined
+  ) {
+    return options;
+  }
+
+  const mode = await selectWithDefault<CleanupMode>({
+    label: "cleanup",
+    message: "Choose cleanup workflow",
+    defaultValue: "full",
+    nonInteractiveMessage: "Non-interactive terminal detected, using default cleanup workflow: full",
+    options: [
+      {
+        label: "Full cleanup",
+        value: "full",
+        hint: "Run nuxt cleanup and remove generated build output",
+      },
+      {
+        label: "Nuxt only",
+        value: "nuxt-only",
+        hint: "Only run nuxt cleanup",
+      },
+      {
+        label: "Build output only",
+        value: "build-only",
+        hint: "Only remove generated directories without running nuxt cleanup",
+      },
+    ],
+  });
+
+  if (mode === "nuxt-only") {
+    return {
+      skipNuxtCleanup: false,
+      cleanupPaths: [],
+    };
+  }
+
+  if (mode === "build-only") {
+    return {
+      skipNuxtCleanup: true,
+      cleanupPaths: [...CLEANUP_PATHS],
+    };
+  }
+
+  return {
+    skipNuxtCleanup: false,
+    cleanupPaths: [...CLEANUP_PATHS],
+  };
+}
 
 export function ifExistsRemove(
   relativePath: string,
@@ -42,6 +109,10 @@ export function ifExistsRemove(
 }
 
 export function cleanUpNuxt(options: CleanupOptions = {}, actions: string[] = []) {
+  if (options.skipNuxtCleanup) {
+    actions.push("skipped nuxt cleanup");
+    return Promise.resolve();
+  }
   if (options.dryRun) {
     printCommandInfo("cleanup", "would run `npx nuxt cleanup`");
     actions.push("would run nuxt cleanup");
@@ -56,7 +127,8 @@ export function cleanUpNuxt(options: CleanupOptions = {}, actions: string[] = []
 }
 
 export function cleanUpBuild(options: CleanupOptions = {}, actions: string[] = []) {
-  for (const path of CLEANUP_PATHS) {
+  const cleanupTargets = options.cleanupPaths ?? [...CLEANUP_PATHS];
+  for (const path of cleanupTargets) {
     ifExistsRemove(path, options, actions);
   }
 }
@@ -70,9 +142,11 @@ export async function cleanUp(options: CleanupOptions = {}) {
   for (const warning of projectConfig.warnings) {
     printCommandWarn(`[config] ${warning}`);
   }
+  const configuredOptions = projectConfig.config.cleanup ?? {};
+  const promptedOptions = await resolveCleanupOptions(options, configuredOptions);
   const resolvedOptions = mergeDefined<CleanupOptions>(
-    projectConfig.config.cleanup,
-    options,
+    configuredOptions,
+    promptedOptions,
   );
   const actions: string[] = [];
   const result = cleanUpNuxt(resolvedOptions, actions);

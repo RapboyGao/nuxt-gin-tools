@@ -11,6 +11,7 @@ import {
 } from "../../nuxt-gin";
 import type { ServerConfigJson } from "../../nuxt-config";
 import { killPorts } from "../../system/ports";
+import { selectWithDefault } from "../prompt";
 import {
   printCommandBanner,
   printCommandSummary,
@@ -25,6 +26,8 @@ export type DevelopOptions = {
   skipNuxt?: boolean;
 };
 
+type DevelopMode = "full" | "nuxt-only" | "go-only";
+
 type DevelopContext = {
   options: DevelopOptions;
   serverConfig: ServerConfigJson;
@@ -32,7 +35,52 @@ type DevelopContext = {
   killPortBeforeDevelop: boolean;
 };
 
-function resolveDevelopContext(options: DevelopOptions = {}): DevelopContext {
+function hasExplicitDevelopModeOptions(options?: DevelopOptions): boolean {
+  return Boolean(options?.skipGo !== undefined || options?.skipNuxt !== undefined);
+}
+
+async function resolveDevelopOptions(
+  options: DevelopOptions = {},
+  configuredOptions: DevelopOptions = {},
+): Promise<DevelopOptions> {
+  if (hasExplicitDevelopModeOptions(options)) {
+    return options;
+  }
+  if (configuredOptions.skipGo !== undefined || configuredOptions.skipNuxt !== undefined) {
+    return options;
+  }
+
+  const mode = await selectWithDefault<DevelopMode>({
+    label: "dev",
+    message: "Choose development workflow",
+    defaultValue: "full",
+    nonInteractiveMessage: "Non-interactive terminal detected, using default development workflow: full",
+    options: [
+      {
+        label: "Nuxt + Go",
+        value: "full",
+        hint: "Start both the Nuxt dev server and Go watcher",
+      },
+      {
+        label: "Nuxt only",
+        value: "nuxt-only",
+        hint: "Only start the Nuxt dev server",
+      },
+      {
+        label: "Go only",
+        value: "go-only",
+        hint: "Only start the Go watcher",
+      },
+    ],
+  });
+
+  return {
+    skipGo: mode === "nuxt-only",
+    skipNuxt: mode === "go-only",
+  };
+}
+
+async function resolveDevelopContext(options: DevelopOptions = {}): Promise<DevelopContext> {
   const projectConfig = resolveNuxtGinProjectConfig();
   for (const warning of projectConfig.warnings) {
     printCommandWarn(`[config] ${warning}`);
@@ -44,9 +92,11 @@ function resolveDevelopContext(options: DevelopOptions = {}): DevelopContext {
     );
   }
 
+  const configuredOptions = projectConfig.config.dev ?? {};
+  const promptedOptions = await resolveDevelopOptions(options, configuredOptions);
   const resolvedOptions = mergeDefined<DevelopOptions>(
-    projectConfig.config.dev,
-    options,
+    configuredOptions,
+    promptedOptions,
   );
   const cleanupBeforeDevelop =
     projectConfig.config.dev?.cleanupBeforeDevelop ?? false;
@@ -107,7 +157,7 @@ async function runGoDev(serverConfig: ServerConfigJson) {
  */
 export async function develop(options: DevelopOptions = {}) {
   printCommandBanner("dev", "Start Nuxt and Go development workflows");
-  const context = resolveDevelopContext(options);
+  const context = await resolveDevelopContext(options);
   const actions: string[] = [];
   await prepareDevelop(context);
   // 在开发前确保占用端口被释放
@@ -144,7 +194,10 @@ export async function develop(options: DevelopOptions = {}) {
  */
 export async function developNuxt(options: DevelopOptions = {}) {
   printCommandBanner("dev:nuxt", "Start Nuxt development server only");
-  const context = resolveDevelopContext(options);
+  const context = await resolveDevelopContext({
+    ...options,
+    skipGo: true,
+  });
   const actions: string[] = [];
   await prepareDevelop({
     ...context,
@@ -169,7 +222,10 @@ export async function developNuxt(options: DevelopOptions = {}) {
  */
 export async function developGo(options: DevelopOptions = {}) {
   printCommandBanner("dev:go", "Start Go watcher only");
-  const context = resolveDevelopContext(options);
+  const context = await resolveDevelopContext({
+    ...options,
+    skipNuxt: true,
+  });
   const actions: string[] = [];
   await prepareDevelop({
     ...context,

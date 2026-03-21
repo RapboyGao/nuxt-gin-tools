@@ -1,6 +1,5 @@
 import concurrently from "concurrently";
 import { execFileSync } from "node:child_process";
-import { createInterface } from "node:readline/promises";
 import {
   packageManagerUpdateCommand,
   resolvePackageManager,
@@ -10,6 +9,7 @@ import {
   mergeDefined,
   resolveNuxtGinProjectConfig,
 } from "../../nuxt-gin";
+import { selectWithDefault } from "../prompt";
 import {
   printCommandBanner,
   printCommandSuccess,
@@ -68,23 +68,27 @@ async function resolveLatestPreference(options: UpdateOptions): Promise<boolean>
     return options.latest;
   }
 
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    printCommandWarn("Non-interactive terminal detected, defaulting update mode to conservative");
-    return false;
-  }
-
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
+  const selection = await selectWithDefault({
+    label: "update",
+    message: "Choose dependency update strategy",
+    defaultValue: "conservative",
+    nonInteractiveMessage:
+      "Non-interactive terminal detected, using default update strategy: conservative",
+    options: [
+      {
+        label: "Conservative",
+        value: "conservative",
+        hint: "Patch-level Go updates and standard package-manager upgrade",
+      },
+      {
+        label: "Latest",
+        value: "latest",
+        hint: "Broader dependency upgrades on both Node and Go sides",
+      },
+    ],
   });
 
-  try {
-    const answer = await rl.question("Use latest dependency upgrade strategy? [y/N] ");
-    const normalized = answer.trim().toLowerCase();
-    return ["y", "yes"].includes(normalized);
-  } finally {
-    rl.close();
-  }
+  return selection === "latest";
 }
 
 export async function update(options: UpdateOptions = {}) {

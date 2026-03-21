@@ -1,9 +1,9 @@
 import { existsSync } from "fs-extra";
 import { join } from "path";
 
-export type PackageManager = "bun" | "pnpm" | "npm";
+export type PackageManager = "bun" | "pnpm" | "yarn" | "npm" | "cnpm";
 export type PackageManagerSelection = PackageManager | "auto";
-export const PACKAGE_MANAGER_SELECTIONS = ["auto", "bun", "pnpm", "npm"] as const;
+export const PACKAGE_MANAGER_SELECTIONS = ["auto", "bun", "pnpm", "yarn", "npm", "cnpm"] as const;
 
 const cwd = process.cwd();
 
@@ -13,6 +13,9 @@ export function detectPackageManager(): PackageManager {
   }
   if (existsSync(join(cwd, "pnpm-lock.yaml"))) {
     return "pnpm";
+  }
+  if (existsSync(join(cwd, "yarn.lock"))) {
+    return "yarn";
   }
   return "npm";
 }
@@ -37,7 +40,11 @@ export function packageManagerUpdateCommand(
       return latest ? "bun update --latest" : "bun update";
     case "pnpm":
       return latest ? "pnpm update --latest" : "pnpm update";
+    case "yarn":
+      return latest ? `yarn up "*" "@*/*"` : `yarn up -R "*" "@*/*"`;
+    case "cnpm":
+      return "cnpm update";
     default:
-      return latest ? "npm update" : "npm update";
+      return "npm update";
   }
 }

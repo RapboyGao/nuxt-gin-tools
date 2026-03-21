@@ -167,7 +167,7 @@ Updates project dependencies with a conservative default strategy:
 
 Options:
 
-- `--package-manager <auto|bun|pnpm|npm>`: package manager selection, default `auto`
+- `--package-manager <auto|bun|pnpm|yarn|npm|cnpm>`: package manager selection, default `auto`
 - `--latest <true|false>`: whether to use the aggressive update strategy, default `false`
 - `--skip-go`: skip Go dependency updates
 - `--skip-node`: skip Node dependency updates
@@ -178,6 +178,8 @@ Examples:
 nuxt-gin update
 nuxt-gin update --package-manager bun --latest true
 nuxt-gin update --package-manager pnpm --latest false
+nuxt-gin update --package-manager yarn --latest true
+nuxt-gin update --package-manager cnpm --latest false
 ```
 
 Also prints a styled command banner before execution.
@@ -495,7 +497,7 @@ src/
 
 参数：
 
-- `--package-manager <auto|bun|pnpm|npm>`：指定包管理器，默认 `auto`
+- `--package-manager <auto|bun|pnpm|yarn|npm|cnpm>`：指定包管理器，默认 `auto`
 - `--latest <true|false>`：是否使用更激进的升级策略，默认 `false`
 - `--skip-go`：跳过 Go 依赖更新
 - `--skip-node`：跳过 Node 依赖更新
@@ -506,6 +508,8 @@ src/
 nuxt-gin update
 nuxt-gin update --package-manager bun --latest true
 nuxt-gin update --package-manager pnpm --latest false
+nuxt-gin update --package-manager yarn --latest true
+nuxt-gin update --package-manager cnpm --latest false
 ```
 
 执行前也会输出一段样式化 banner。
