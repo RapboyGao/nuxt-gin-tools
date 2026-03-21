@@ -1,4 +1,5 @@
 import concurrently from "concurrently";
+import { execFileSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 import {
   packageManagerUpdateCommand,
@@ -22,6 +23,45 @@ export type UpdateOptions = {
   skipGo?: boolean;
   skipNode?: boolean;
 };
+
+function quoteShellArg(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function collectGoPackages(): string[] {
+  try {
+    const output = execFileSync(
+      "go",
+      [
+        "list",
+        "./...",
+      ],
+      {
+        cwd: process.cwd(),
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+      },
+    );
+
+    const packages = output
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .filter((item) => !item.includes("/vendor/") && !item.endsWith("/vendor"));
+
+    return packages.length > 0 ? packages : ["./..."];
+  } catch {
+    return ["./..."];
+  }
+}
+
+function buildGoUpdateCommand(latest: boolean): string {
+  const packageDirs = collectGoPackages().map((dir) => quoteShellArg(dir)).join(" ");
+  const goGetCommand = latest
+    ? `go get -u ${packageDirs}`
+    : `go get -u=patch ${packageDirs}`;
+  return `${goGetCommand} && go mod tidy`;
+}
 
 async function resolveLatestPreference(options: UpdateOptions): Promise<boolean> {
   if (typeof options.latest === "boolean") {
@@ -80,7 +120,7 @@ export async function update(options: UpdateOptions = {}) {
       `updated Go modules with ${latest ? "latest" : "patch"} strategy`,
     );
     commands.push({
-      command: latest ? "go get -u ./... && go mod tidy" : "go get -u=patch ./... && go mod tidy",
+      command: buildGoUpdateCommand(latest),
       name: "go",
       prefixColor: "green" as const,
     });
