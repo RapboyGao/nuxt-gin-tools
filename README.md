@@ -32,6 +32,12 @@ Quick Jump:
 pnpm add -D nuxt-gin-tools
 ```
 
+or
+
+```bash
+bun add -d nuxt-gin-tools
+```
+
 ### ⚡ Quick Start
 
 ```bash
@@ -105,7 +111,7 @@ Also prints a styled command banner before cleanup starts.
 
 Updates project dependencies with a conservative default strategy:
 
-- Node: `pnpm update`
+- Node: auto-detects `bun update`, `pnpm update`, or `npm update`
 - Go: `go get -u=patch ./... && go mod tidy`
 
 Flags:
@@ -239,7 +245,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 ### 🖥️ Environment
 
 - Node.js
-- pnpm
+- pnpm or bun
 - Go, if you need the Gin side to run
 - no extra generator dependency is required for the current command set
 
@@ -249,6 +255,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 👀 The current watcher model is `chokidar` + restart `go run main.go`
 - 🪟 Packaging uses platform-aware executable naming: Windows defaults to `.exe`, Linux/macOS defaults to no extension
 - 🌈 Main commands print a consistent banner and clearer success/info output in the terminal
+- 📦 Both `pnpm` and `bun` are supported, but one working tree should stick to one package manager at a time
 
 ---
 
@@ -268,6 +275,12 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 
 ```bash
 pnpm add -D nuxt-gin-tools
+```
+
+或
+
+```bash
+bun add -d nuxt-gin-tools
 ```
 
 ### ⚡ 快速开始
@@ -343,7 +356,7 @@ nuxt-gin dev --no-cleanup
 
 按偏保守的默认策略更新依赖：
 
-- Node：`pnpm update`
+- Node：自动识别 `bun update`、`pnpm update` 或 `npm update`
 - Go：`go get -u=patch ./... && go mod tidy`
 
 参数：
@@ -477,7 +490,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 ### 🖥️ 环境依赖
 
 - Node.js
-- pnpm
+- pnpm 或 bun
 - Go，若需要运行 Gin 侧开发流程
 - 当前命令集不再依赖额外的代码生成器
 
@@ -487,3 +500,4 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 👀 当前 Go 开发监听方案为 `chokidar` + 重启 `go run main.go`
 - 🪟 打包时会按平台生成可执行文件名：Windows 默认 `.exe`，Linux/macOS 默认无扩展名
 - 🌈 主要命令会输出统一风格的 banner，并提供更清晰的成功 / 信息提示
+- 📦 同一个工作副本建议固定使用一种包管理器，不要在同一套依赖目录里反复混用 `pnpm` 与 `bun`

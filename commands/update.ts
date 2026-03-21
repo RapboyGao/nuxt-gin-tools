@@ -1,4 +1,5 @@
 import concurrently from "concurrently";
+import { detectPackageManager, packageManagerUpdateCommand } from "../src/package-manager";
 import { printCommandBanner, printCommandSuccess, printCommandWarn } from "../src/terminal-ui";
 
 export type UpdateOptions = {
@@ -10,11 +11,12 @@ export type UpdateOptions = {
 export function update(options: UpdateOptions = {}) {
   printCommandBanner("update", "Update Node and Go dependencies");
   const commands = [];
+  const packageManager = detectPackageManager();
 
   if (!options.skipNode) {
     commands.push({
-      command: options.latest ? "pnpm update --latest" : "pnpm update",
-      name: "pnpm",
+      command: packageManagerUpdateCommand(packageManager, options.latest === true),
+      name: packageManager,
       prefixColor: "magenta" as const,
     });
   }
