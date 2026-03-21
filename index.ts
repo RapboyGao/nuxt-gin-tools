@@ -15,13 +15,14 @@ import {
   isPackageManagerSelection,
   type PackageManagerSelection,
 } from "./src/package-manager";
+import { printCommandError } from "./src/terminal-ui";
 
 // 获取命令行参数（去除前两个默认参数）
 const args = process.argv.slice(2);
 
 // 检查是否提供了命令
 if (args.length === 0) {
-  console.error("未提供命令。请指定要运行的命令。");
+  printCommandError("未提供命令。请指定要运行的命令。");
   process.exit(1);
 }
 
@@ -60,15 +61,22 @@ async function main() {
         binaryName: getOption(options, "binary-name"),
         skipGo: hasFlag(options, "skip-go"),
         skipNuxt: hasFlag(options, "skip-nuxt"),
+        skipBuild: hasFlag(options, "skip-build"),
+        skipZip: hasFlag(options, "skip-zip"),
       });
       break;
     case "install":
       // 执行安装后的初始化操作
-      await postInstall();
+      await postInstall({
+        skipGo: hasFlag(options, "skip-go"),
+        skipNuxt: hasFlag(options, "skip-nuxt"),
+      });
       break;
     case "cleanup":
       // 执行清理操作
-      await cleanUp();
+      await cleanUp({
+        dryRun: hasFlag(options, "dry-run"),
+      });
       break;
     case "update":
       // 更新依赖
@@ -80,12 +88,12 @@ async function main() {
       });
       break;
     default:
-      console.error(`未知命令: ${command}`);
+      printCommandError(`未知命令: ${command}`);
       process.exit(1);
   }
 }
 
 void main().catch((error) => {
-  console.error(error);
+  printCommandError("命令执行失败", error);
   process.exit(1);
 });

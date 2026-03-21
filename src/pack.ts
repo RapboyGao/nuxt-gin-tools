@@ -2,6 +2,14 @@ import type { BuildOptions } from "../commands/builder";
 
 export interface PackConfig extends BuildOptions {
   /**
+   * 是否跳过构建步骤
+   */
+  skipBuild?: boolean;
+  /**
+   * 是否跳过 7z 打包步骤
+   */
+  skipZip?: boolean;
+  /**
    * 额外需要打包的文件映射
    * key: 源文件路径（相对于项目根目录或绝对路径）
    * value: 打包后对应位置（相对于服务器构建目录或绝对路径）

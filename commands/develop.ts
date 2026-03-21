@@ -5,7 +5,7 @@ import cleanUp from "./cleanup";
 import postInstall from "./postinstall";
 import { startGoDev } from "./dev-go";
 import { killPorts } from "../src/utils";
-import { printCommandBanner } from "../src/terminal-ui";
+import { printCommandBanner, printCommandSummary } from "../src/terminal-ui";
 
 const cwd = process.cwd();
 const serverConfig = readJSONSync(join(cwd, "server.config.json"));
@@ -57,6 +57,7 @@ async function runGoDev() {
  */
 export async function develop(options: DevelopOptions = {}) {
   printCommandBanner("dev", "Start Nuxt and Go development workflows");
+  const actions: string[] = [];
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
   await prepareDevelop(options);
   // 在开发前确保占用端口被释放
@@ -65,14 +66,24 @@ export async function develop(options: DevelopOptions = {}) {
       options.skipGo ? undefined : serverConfig.ginPort,
       options.skipNuxt ? undefined : serverConfig.nuxtPort,
     ]);
+    actions.push("released occupied development ports");
   }
   const tasks: Array<Promise<void>> = [];
   if (!options.skipGo) {
     tasks.push(runGoDev());
+    actions.push(`started Go watcher on port ${serverConfig.ginPort}`);
   }
   if (!options.skipNuxt) {
     tasks.push(runNuxtDev());
+    actions.push(`started Nuxt dev server on port ${serverConfig.nuxtPort}`);
   }
+  if (options.skipGo) {
+    actions.push("skipped Go workflow");
+  }
+  if (options.skipNuxt) {
+    actions.push("skipped Nuxt workflow");
+  }
+  printCommandSummary("dev", actions);
   await Promise.all(tasks);
 }
 
@@ -83,11 +94,15 @@ export async function develop(options: DevelopOptions = {}) {
  */
 export async function developNuxt(options: DevelopOptions = {}) {
   printCommandBanner("dev:nuxt", "Start Nuxt development server only");
+  const actions: string[] = [];
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
   await prepareDevelop(options);
   if (killPortBeforeDevelop) {
     killPorts([serverConfig.nuxtPort]);
+    actions.push("released Nuxt dev port");
   }
+  actions.push(`started Nuxt dev server on port ${serverConfig.nuxtPort}`);
+  printCommandSummary("dev:nuxt", actions);
   await runNuxtDev();
 }
 
@@ -98,11 +113,15 @@ export async function developNuxt(options: DevelopOptions = {}) {
  */
 export async function developGo(options: DevelopOptions = {}) {
   printCommandBanner("dev:go", "Start Go watcher only");
+  const actions: string[] = [];
   const killPortBeforeDevelop = serverConfig.killPortBeforeDevelop !== false;
   await prepareDevelop(options);
   if (killPortBeforeDevelop) {
     killPorts([serverConfig.ginPort]);
+    actions.push("released Go server port");
   }
+  actions.push(`started Go watcher on port ${serverConfig.ginPort}`);
+  printCommandSummary("dev:go", actions);
   await runGoDev();
 }
 

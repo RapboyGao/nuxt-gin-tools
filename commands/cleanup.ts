@@ -1,18 +1,51 @@
 import * as FS from "fs-extra";
 import * as Path from "path";
 import concurrently from "concurrently";
-import { printCommandBanner, printCommandSuccess } from "../src/terminal-ui";
+import {
+  printCommandBanner,
+  printCommandInfo,
+  printCommandSuccess,
+  printCommandSummary,
+} from "../src/terminal-ui";
 
 const cwd = process.cwd();
+const CLEANUP_PATHS = [
+  ".build/production",
+  "dist",
+  ".build",
+  "tmp",
+  "vue/.output",
+  ".openapi-generator",
+] as const;
 
-export function ifExistsRemove(relativePath: string) {
+export type CleanupOptions = {
+  dryRun?: boolean;
+};
+
+export function ifExistsRemove(
+  relativePath: string,
+  options: CleanupOptions = {},
+  actions: string[] = [],
+) {
   const absolutePath = Path.resolve(cwd, relativePath);
   if (FS.existsSync(absolutePath)) {
+    if (options.dryRun) {
+      printCommandInfo("cleanup", `would remove ${absolutePath}`);
+      actions.push(`would remove ${relativePath}`);
+      return;
+    }
     FS.removeSync(absolutePath);
+    actions.push(`removed ${relativePath}`);
   }
 }
 
-export function cleanUpNuxt() {
+export function cleanUpNuxt(options: CleanupOptions = {}, actions: string[] = []) {
+  if (options.dryRun) {
+    printCommandInfo("cleanup", "would run `npx nuxt cleanup`");
+    actions.push("would run nuxt cleanup");
+    return Promise.resolve();
+  }
+  actions.push("ran nuxt cleanup");
   return concurrently([
     {
       command: "npx nuxt cleanup",
@@ -20,32 +53,26 @@ export function cleanUpNuxt() {
   ]).result;
 }
 
-export function cleanUpBuild() {
-  // 清理构建目录
-  ifExistsRemove(".build/production");
-  // 清理原始 dist 目录
-  ifExistsRemove("dist");
-  // 清理临时文件
-  ifExistsRemove(".build");
-  // 清理临时文件
-  ifExistsRemove("tmp");
-  // 清理 Vue 应用构建输出目录
-  ifExistsRemove("vue/.output");
-  // 清理 OpenAPI 生成的文件
-  ifExistsRemove(".openapi-generator");
-  // 清理go.sum
-  // ifExistsRemove("go.sum");
+export function cleanUpBuild(options: CleanupOptions = {}, actions: string[] = []) {
+  for (const path of CLEANUP_PATHS) {
+    ifExistsRemove(path, options, actions);
+  }
 }
 
 /**
  * 清理构建目录和临时文件
  */
-export async function cleanUp() {
+export async function cleanUp(options: CleanupOptions = {}) {
   printCommandBanner("cleanup", "Remove generated build output and temporary files");
-  const result = cleanUpNuxt();
-  cleanUpBuild();
+  const actions: string[] = [];
+  const result = cleanUpNuxt(options, actions);
+  cleanUpBuild(options, actions);
   await result;
-  printCommandSuccess("cleanup", "Temporary files removed");
+  printCommandSuccess(
+    "cleanup",
+    options.dryRun ? "Dry run completed" : "Temporary files removed",
+  );
+  printCommandSummary("cleanup", actions);
 }
 
 export default cleanUp;

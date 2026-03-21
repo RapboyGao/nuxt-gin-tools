@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
-import chalk from "chalk";
 import os from "os";
+import { printCommandSuccess } from "./terminal-ui";
 
 type KillPortOptions = {
   logPrefix?: string;
@@ -34,7 +34,7 @@ function killPortUnix(port: number, options?: KillPortOptions) {
     for (const pid of pids) {
       try {
         process.kill(pid, "SIGKILL");
-        console.log(chalk.green(buildMessage(pid, port, "unix", options)));
+        printCommandSuccess("port", buildMessage(pid, port, "unix", options));
       } catch {
         // Best-effort: if the process is already gone, ignore.
       }
@@ -80,7 +80,7 @@ function killPortWindows(port: number, options?: KillPortOptions) {
         execSync(`taskkill /PID ${pid} /F`, {
           stdio: ["ignore", "ignore", "ignore"],
         });
-        console.log(chalk.green(buildMessage(pid, port, "win32", options)));
+        printCommandSuccess("port", buildMessage(pid, port, "win32", options));
       } catch {
         // Best-effort: if the process is already gone, ignore.
       }

@@ -25,6 +25,7 @@ Quick Jump:
 - 🛡️ Config validation with `warn` and `error` feedback
 - 🔧 Useful CLI switches for partial workflows like `--skip-go`
 - 🎨 Colorful command banners and clearer terminal feedback
+- 📋 Fancy end-of-command summaries that show what just changed
 
 ### 📦 Install
 
@@ -85,6 +86,11 @@ Bootstraps the project:
 - if Go is available, also runs `go mod download && go mod tidy`
 - prints a styled command banner before execution
 
+Options:
+
+- `--skip-go`: skip Go dependency bootstrap
+- `--skip-nuxt`: skip Nuxt prepare
+
 #### `nuxt-gin build`
 
 Runs the build-and-pack flow.
@@ -99,6 +105,8 @@ Flags:
 
 - `--skip-go`: skip Go build
 - `--skip-nuxt`: skip Nuxt static build
+- `--skip-build`: skip the build step and only assemble/package existing artifacts
+- `--skip-zip`: skip `.7z` creation and only prepare the bundle directory
 - `--binary-name <name>`: override the Go binary name under `.build/.server`
 
 #### `nuxt-gin cleanup`
@@ -106,6 +114,10 @@ Flags:
 Removes generated temp files and build output.
 
 Also prints a styled command banner before cleanup starts.
+
+Options:
+
+- `--dry-run`: print what would be removed without deleting anything
 
 #### `nuxt-gin update`
 
@@ -264,6 +276,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 👀 The current watcher model is `chokidar` + restart `go run main.go`
 - 🪟 Packaging uses platform-aware executable naming: Windows defaults to `.exe`, Linux/macOS defaults to no extension
 - 🌈 Main commands print a consistent banner and clearer success/info output in the terminal
+- 📋 Commands also print a styled summary of the actions they performed; long-running dev commands print the startup summary before entering watch mode
 - 📦 Both `pnpm` and `bun` are supported, but one working tree should stick to one package manager at a time
 
 ---
@@ -279,6 +292,7 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 🛡️ 对打包配置做校验，区分 `warn` 和 `error`
 - 🔧 支持 `--skip-go` 等局部开发参数
 - 🎨 提供更醒目的彩色命令行 banner 与输出提示
+- 📋 命令结束时会打印更清晰的结果摘要
 
 ### 📦 安装
 
@@ -339,6 +353,11 @@ nuxt-gin dev --no-cleanup
 - 检测到 Go 后，额外执行 `go mod download && go mod tidy`
 - 执行前会输出一段样式化 banner
 
+参数：
+
+- `--skip-go`：跳过 Go 依赖初始化
+- `--skip-nuxt`：跳过 Nuxt prepare
+
 #### `nuxt-gin build`
 
 执行构建与打包流程。
@@ -353,6 +372,8 @@ nuxt-gin dev --no-cleanup
 
 - `--skip-go`：跳过 Go 构建
 - `--skip-nuxt`：跳过 Nuxt 静态构建
+- `--skip-build`：跳过构建阶段，仅组装或打包现有产物
+- `--skip-zip`：跳过 `.7z` 生成，仅准备 bundle 目录
 - `--binary-name <name>`：覆盖 `.build/.server` 下的 Go 二进制名称
 
 #### `nuxt-gin cleanup`
@@ -360,6 +381,10 @@ nuxt-gin dev --no-cleanup
 清理临时文件与构建产物。
 
 执行前也会输出一段样式化 banner。
+
+参数：
+
+- `--dry-run`：只打印将要删除的内容，不真正删除
 
 #### `nuxt-gin update`
 
@@ -518,4 +543,5 @@ NUXT_GIN_WATCH_CONFIG=/path/to/.go-watch.json
 - 👀 当前 Go 开发监听方案为 `chokidar` + 重启 `go run main.go`
 - 🪟 打包时会按平台生成可执行文件名：Windows 默认 `.exe`，Linux/macOS 默认无扩展名
 - 🌈 主要命令会输出统一风格的 banner，并提供更清晰的成功 / 信息提示
+- 📋 命令结束后会打印本次实际执行内容的摘要；`dev` 这类常驻命令会在进入监听前先打印启动摘要
 - 📦 同一个工作副本建议固定使用一种包管理器，不要在同一套依赖目录里反复混用 `pnpm` 与 `bun`

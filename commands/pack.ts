@@ -12,8 +12,10 @@ import fg from "fast-glob";
 import type { PackConfig } from "../src/pack";
 import {
   printCommandBanner,
+  printCommandError,
   printCommandInfo,
   printCommandSuccess,
+  printCommandSummary,
   printCommandWarn,
 } from "../src/terminal-ui";
 
@@ -139,7 +141,15 @@ function validatePackConfig(config: unknown, sourcePath: string): PackConfig {
     }
   }
 
-  const booleanFields = ["skipGo", "skipNuxt", "cleanDist", "writeScripts", "overwrite"];
+  const booleanFields = [
+    "skipGo",
+    "skipNuxt",
+    "skipBuild",
+    "skipZip",
+    "cleanDist",
+    "writeScripts",
+    "overwrite",
+  ];
   for (const field of booleanFields) {
     const value = typedConfig[field];
     if (value !== undefined && typeof value !== "boolean") {
@@ -165,6 +175,9 @@ function validatePackConfig(config: unknown, sourcePath: string): PackConfig {
   }
   if (typedConfig.skipGo === true && typedConfig.skipNuxt === true) {
     issues.push({ level: "warn", message: `skipGo and skipNuxt are both true; build step will be skipped` });
+  }
+  if (typedConfig.skipBuild === true && typedConfig.skipZip === true) {
+    issues.push({ level: "warn", message: `skipBuild and skipZip are both true; only bundle assembly will run` });
   }
 
   for (const issue of issues) {
@@ -322,11 +335,12 @@ function makeZip(serverPath: string, zipPath: string) {
     // 使用 7zip 将服务器构建目录打包为 7z 文件
     Zip.pack(serverPath, zipPath, (error) => {
       if (error) {
-        console.error("打包失败:", error);
+        printCommandError("打包失败", error);
         reject(error);
+        return;
       }
 
-      console.log("打包成功:", zipPath);
+      printCommandSuccess("pack", `archive ready: ${zipPath}`);
       resolve(zipPath);
     });
   });
@@ -355,25 +369,50 @@ function cleanUp(config?: PackConfig) {
  */
 export async function buildAndPack(config?: PackConfig) {
   printCommandBanner("build", "Build project artifacts and pack deployment bundle");
+  const actions: string[] = [];
   const resolvedConfig = config ?? readPackConfigFromCwd();
   const serverPath = resolveServerPath(resolvedConfig);
   const zipPath = resolveZipPath(resolvedConfig);
-  await build(resolvedConfig); // 执行项目构建
+  if (!resolvedConfig?.skipBuild) {
+    await build(resolvedConfig); // 执行项目构建
+    actions.push("built project artifacts");
+  } else {
+    printCommandInfo("build", "skipping build step");
+    actions.push("skipped build step");
+  }
   if (resolvedConfig?.beforePack) {
     await resolvedConfig.beforePack();
+    actions.push("ran beforePack hook");
   }
   copyGeneratedFiles(serverPath, resolvedConfig); // 复制相关文件
+  actions.push(`assembled bundle in ${serverPath}`);
   if (resolvedConfig?.writeScripts !== false) {
     writeScriptFiles(serverPath, resolvedConfig); // 写入脚本文件
+    actions.push("wrote startup scripts and package.json");
+  } else {
+    actions.push("skipped startup script generation");
   }
-  await makeZip(serverPath, zipPath); // 打包文件
-  printCommandInfo("pack", `7z archive: ${zipPath}`);
+  if (!resolvedConfig?.skipZip) {
+    await makeZip(serverPath, zipPath); // 打包文件
+    printCommandInfo("pack", `7z archive: ${zipPath}`);
+    actions.push(`created 7z archive at ${zipPath}`);
+  } else {
+    printCommandInfo("pack", "skipping 7z archive step");
+    actions.push("skipped 7z archive step");
+  }
   printCommandInfo("pack", `bundle dir: ${serverPath}`);
   if (resolvedConfig?.afterPack) {
     await resolvedConfig.afterPack(zipPath);
+    actions.push("ran afterPack hook");
   }
   cleanUp(resolvedConfig); // 清理临时文件
+  if (resolvedConfig?.cleanDist === false) {
+    actions.push("kept dist directory by configuration");
+  } else {
+    actions.push("cleaned dist directory");
+  }
   printCommandSuccess("build", "Build and pack completed");
+  printCommandSummary("build", actions);
 }
 
 export default buildAndPack;
