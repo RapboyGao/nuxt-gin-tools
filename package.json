@@ -9,7 +9,7 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "build": "ts-node scripts/build-package.ts",
+    "build": "node scripts/build-package.js",
     "publish": "cd ./dist && npm publish --access public"
   },
   "dependencies": {
@@ -26,7 +26,6 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.5.0",
     "nuxt": "^4.4.2",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
 }
