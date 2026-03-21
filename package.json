@@ -10,7 +10,7 @@
   "license": "MIT",
   "scripts": {
     "build": "ts-node scripts/build-package.ts",
-    "publish": "npm publish --access public"
+    "publish": "cd ./dist && npm publish --access public"
   },
   "dependencies": {
     "7zip-min": "^3.0.1",
